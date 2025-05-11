@@ -396,6 +396,7 @@ type UserSearchResult struct {
 	Description    string `json:"description"`
 	ProfilePicture string `json:"profile_picture"` // base64 строка изображения
 }
+
 type Author struct {
 	UserID         int    `json:"user_id"`
 	Username       string `json:"username"`
