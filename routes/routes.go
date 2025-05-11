@@ -106,6 +106,79 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/friends/remove", handlers.RemoveFriend)
 		//уд репост
 		auth.POST("/repost/remove", handlers.RemoveRepost)
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		auth.POST("/friends/list", handlers.GetFriendsList)
+
+		auth.POST("/friend-request/send", handlers.SendFriendRequest)
+		auth.POST("/friend-request/accept", handlers.AcceptFriendRequest)
+		auth.POST("/friend-request/reject", handlers.RejectFriendRequest)
+		auth.POST("/friend-request/incoming", handlers.GetFriendRequests)
+		auth.POST("/user/subscribers", handlers.GetSubscribersList)
+
+		auth.POST("/user/remove-subscriber", handlers.RemoveSubscriber)
+		auth.POST("/user/unsubscribe", handlers.UnsubscribeFromUser)
+		auth.POST("/user/post/delete", handlers.DeletePost)
+		auth.POST("/user/post/update", handlers.UpdatePost)
+
+		// Создание стикер-пака
+		auth.POST("/user/sticker-pack/create", handlers.CreateStickerPack)
+
+		// Добавление стикера
+		auth.POST("/user/sticker-pack/add-sticker", handlers.AddStickerToPack)
+
+		// Получение стикер-паков пользователя
+		auth.POST("/user/sticker-pack/list", handlers.GetUserStickerPacks)
+
+		// Роуты для работы с чатами
+		auth.POST("/chat/create", handlers.CreateGroupChat)
+		auth.POST("/chat/get", handlers.GetUserChats)
+
+		// Роуты для сообщений
+		auth.POST("/message/send", handlers.SendMessageToUser)
+		auth.POST("/sticker/send", handlers.SendStickerToUser)
+
+		auth.POST("/user/chats-in-folder", handlers.GetChatsByFolder)
+		// удаление чата из папки
+		auth.POST("/user/folder/chat/remove", handlers.RemoveChatFromFolder)
+		// Путь для удаления папки чатов
+		auth.POST("/user/folder/remove", handlers.RemoveChatFolder)
+
+		// Регистрация маршрута для добавления группы
+		auth.POST("/user/group/add", handlers.AddGroup)
+
+		auth.POST("/group/:group_id/subscribers", handlers.GetGroupSubscribers)
+		//получение информации о группе и её постах
+		auth.GET("/group/:group_id/posts", handlers.GetGroupPostsInfo)
+		auth.POST("/feature/add", handlers.AddFeature)
+		auth.GET("/features", handlers.GetFeaturesInfo)
+		auth.POST("/groups/:group_id/roles", handlers.CreateRoleWithFeatures)
+		auth.POST("/roles/:role_id/features", handlers.AddFeatureToRole)
+		auth.POST("/roles/:role_id/users", handlers.AddUserToRoleGroup)
+		auth.GET("/groups/:group_id/roles", handlers.GetRolesInfoForGroup)
+		auth.POST("/group_posts/:group_id", handlers.GetGroupPosts)
+		// Для добавления комментария в пост группы
+		auth.POST("/group/:group_id/add-post-comment", handlers.AddCommentToGroupPost)
+
+		// Для добавления пользователя в черный список группы
+		auth.POST("/group/:group_id/blacklist/add", handlers.AddUserToGroupBlacklist)
+
+		auth.GET("/group/:group_id/blacklist", handlers.GetGroupBlacklist)
+		// Для удаления пользователя из черного списка группы
+		auth.POST("/group/:group_id/blacklist/remove", handlers.RemoveUserFromGroupBlacklist)
+		// Роут для поиска групп
+		auth.POST("/search/users", handlers.SearchUsers)
+		auth.POST("/search/group", handlers.SearchGroups)
+
+		auth.POST("/tags/create", handlers.CreateTag)
+		auth.GET("/tags/:group_id", handlers.GetTags)
+		auth.POST("/group/update-tags", handlers.UpdateTagsInGroup)
+		auth.GET("/comments", handlers.GetComments)
+		auth.POST("/toggle_like_comment", handlers.ToggleLikeComment)
+		auth.POST("/add_to_favourites", handlers.AddToFavourites)
+		auth.POST("/user/favourite-sms", handlers.GetUserFavouriteSMS)
+		auth.POST("/search/posts", handlers.SearchPosts)
+		auth.POST("/search/all", handlers.SearchAll)
 
 	}
 }
