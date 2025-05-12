@@ -40,3 +40,36 @@ func GenerateToken(userID int, login string, duration time.Duration) (string, er
 
 	return signedToken, nil
 }
+
+// utils/jwt.go
+
+var SecretKey = []byte("your-secret-key") // Установи секретный ключ
+
+// Структура для полезной нагрузки токена
+type Claims struct {
+	UserID int    `json:"user_id"`
+	Login  string `json:"login"`
+	jwt.StandardClaims
+}
+
+// Функция для валидации токена
+func ValidateToken(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// Проверка метода подписи
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("неподдерживаемый метод подписи")
+		}
+		return SecretKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Проверка токена на валидность
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	} else {
+		return nil, errors.New("невалидный токен")
+	}
+}

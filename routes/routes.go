@@ -14,6 +14,8 @@ func SetupRoutes(r *gin.Engine) {
 	// r.POST("/register", handlers.Register)
 	// r.POST("/update-info-user", handlers.UpdateUserInfo)
 	// Protected routes
+	r.POST("/register", handlers.RegisterUser)
+
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware())
 	{
@@ -22,7 +24,7 @@ func SetupRoutes(r *gin.Engine) {
 		// auth.POST("/update-info-user", handlers.UpdateUserInfo)
 		// auth.POST("/update-user-birthdate", handlers.UpdateUserBirthDate)
 		// auth.POST("/update-user-password", handlers.UpdateUserPassword)
-
+		auth.POST("/check-auth", handlers.CheckAuth)
 		//пол свои репосты
 		auth.POST("/reposts", handlers.GetUserReposts)
 		//пол репосты польз

@@ -7,13 +7,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginRequest struct {
 	Login    string `json:"login" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Password string `json:"password" binding:"required"` // <- тоже SHA256 от клиента
 }
 
+// Авторизация пользователя
 func LoginUser(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -21,47 +23,80 @@ func LoginUser(c *gin.Context) {
 		return
 	}
 
-	// Проверяем пользователя в базе данных
 	var userID int
-	err := db.DB.Get(&userID, `SELECT id_user FROM public.user WHERE login_us = $1 AND password = $2`, req.Login, req.Password)
+	var dbHashedPassword string
+
+	// Ищем пользователя по логину
+	err := db.DB.QueryRow(
+		`SELECT id_user, password FROM public.user WHERE login_us = $1`,
+		req.Login,
+	).Scan(&userID, &dbHashedPassword)
+
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неверный логин или пароль"})
 		return
 	}
 
-	// Генерация access токена (срок действия 15 минут)
+	// Сравниваем SHA256-пароль с bcrypt-хешем
+	err = bcrypt.CompareHashAndPassword([]byte(dbHashedPassword), []byte(req.Password))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неверный логин или пароль"})
+		return
+	}
+
+	// Генерируем токены
 	accessToken, err := utils.GenerateToken(userID, req.Login, 15*time.Minute)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка создания access токена"})
 		return
 	}
 
-	// Генерация refresh токена (срок действия 7 дней)
 	refreshToken, err := utils.GenerateToken(userID, req.Login, 7*24*time.Hour)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка создания refresh токена"})
 		return
 	}
 
-	// Устанавливаем куки с токенами (HttpOnly, Secure, SameSite)
+	// Устанавливаем куки
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
-		HttpOnly: true,                    // Запрещает доступ к куки через JavaScript
-		Secure:   true,                    // Cookie будет отправляться только по HTTPS
-		SameSite: http.SameSiteStrictMode, // Защита от CSRF атак
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	})
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		Path:     "/",
-		HttpOnly: true,                    // Запрещает доступ к куки через JavaScript
-		Secure:   true,                    // Cookie будет отправляться только по HTTPS
-		SameSite: http.SameSiteStrictMode, // Защита от CSRF атак
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	})
 
-	// Отправляем успешный ответ
 	c.JSON(http.StatusOK, gin.H{"message": "Авторизация успешна"})
+}
+
+// handlers/auth.go
+
+// Функция для проверки авторизации
+func CheckAuth(c *gin.Context) {
+	// Проверка наличия токена доступа в куках
+	accessToken, err := c.Cookie("access_token")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Токен доступа отсутствует"})
+		return
+	}
+
+	// Проверка валидности токена
+	claims, err := utils.ValidateToken(accessToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неверный или истёкший токен"})
+		return
+	}
+
+	// Все в порядке — пользователь авторизован
+	c.JSON(http.StatusOK, gin.H{"message": "Пользователь авторизован", "user_id": claims.UserID, "login": claims.Login})
 }
