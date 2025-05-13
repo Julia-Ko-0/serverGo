@@ -45,7 +45,7 @@ func LoginUser(c *gin.Context) {
 	}
 
 	// Генерируем токены
-	accessToken, err := utils.GenerateToken(userID, req.Login, 15*time.Minute)
+	accessToken, err := utils.GenerateToken(userID, req.Login, 1*time.Hour)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка создания access токена"})
 		return
@@ -81,6 +81,26 @@ func LoginUser(c *gin.Context) {
 
 // handlers/auth.go
 
+// // Функция для проверки авторизации
+// func CheckAuth(c *gin.Context) {
+// 	// Проверка наличия токена доступа в куках
+// 	accessToken, err := c.Cookie("access_token")
+// 	if err != nil {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Токен доступа отсутствует"})
+// 		return
+// 	}
+
+// 	// Проверка валидности токена
+// 	claims, err := utils.ValidateToken(accessToken)
+// 	if err != nil {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неверный или истёкший токен"})
+// 		return
+// 	}
+
+//		// Все в порядке — пользователь авторизован
+//		c.JSON(http.StatusOK, gin.H{"message": "Пользователь авторизован", "user_id": claims.UserID, "login": claims.Login})
+//	}
+//
 // Функция для проверки авторизации
 func CheckAuth(c *gin.Context) {
 	// Проверка наличия токена доступа в куках

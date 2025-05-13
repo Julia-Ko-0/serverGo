@@ -17,7 +17,7 @@ func GenerateToken(userID int, login string, duration time.Duration) (string, er
 
 	// Проверка на пустую переменную окружения
 	if jwtKey == "" {
-		log.Println("❌ JWT_SECRET is EMPTY! Please check your .env file or environment variables.")
+		log.Println("JWT_SECRET is EMPTY! Please check your .env file or environment variables.")
 		return "", errors.New("JWT_SECRET is not set in environment variables")
 	}
 
@@ -34,7 +34,7 @@ func GenerateToken(userID int, login string, duration time.Duration) (string, er
 	// Подписываем токен с использованием секретного ключа
 	signedToken, err := token.SignedString([]byte(jwtKey))
 	if err != nil {
-		log.Println("❌ Error signing token:", err)
+		log.Println("Error signing token:", err)
 		return "", err
 	}
 
@@ -43,7 +43,8 @@ func GenerateToken(userID int, login string, duration time.Duration) (string, er
 
 // utils/jwt.go
 
-var SecretKey = []byte("your-secret-key") // Установи секретный ключ
+// Установи секретный ключ
+// var SecretKey = []byte("your-secret-key") // Установи секретный ключ
 
 // Структура для полезной нагрузки токена
 type Claims struct {
@@ -54,12 +55,19 @@ type Claims struct {
 
 // Функция для валидации токена
 func ValidateToken(tokenString string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	var SecretKey = os.Getenv("JWT_SECRET")
+	// Проверка на пустую переменную окружения
+	if SecretKey == "" {
+		log.Println("JWT_SECRET is EMPTY! Please check your .env file or environment variables.")
+		return nil, errors.New("JWT_SECRET is not set in environment variables")
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		// Проверка метода подписи
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("неподдерживаемый метод подписи")
 		}
-		return SecretKey, nil
+		return []byte(SecretKey), nil
 	})
 
 	if err != nil {

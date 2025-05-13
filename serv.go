@@ -119,7 +119,8 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	godotenv.Load(".env")
+	if err := godotenv.Load(".env"); err != nil {
 		log.Fatal("Ошибка загрузки .env файла")
 	}
 	var jwtKey = []byte(os.Getenv("JWT_SECRET"))

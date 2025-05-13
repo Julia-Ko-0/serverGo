@@ -513,22 +513,19 @@ func GetUserFavouritePosts(c *gin.Context) {
 		return
 	}
 
-	var jsonResult []byte
+	var jsonResult string
 	err := db.DB.QueryRow(`SELECT * FROM public.get_user_favourite_posts($1)`, userID).Scan(&jsonResult)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
 		return
 	}
 
-	var posts []data.FavouritePost
-	if len(jsonResult) > 0 {
-		if err := json.Unmarshal(jsonResult, &posts); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка разбора JSON", "details": err.Error()})
-			return
-		}
+	var favourites data.FavouritePost
+	if err := json.Unmarshal([]byte(jsonResult), &favourites); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"favourite_posts": posts})
+	c.JSON(http.StatusOK, favourites)
 }
 func GetUserFavouriteSMS(c *gin.Context) {
 	userIDRaw, exists := c.Get("user_id")

@@ -60,7 +60,7 @@ func RegisterUser(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка регистрации", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка регистрации"})
 		return
 	}
 
