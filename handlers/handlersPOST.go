@@ -5,6 +5,7 @@ import (
 	"net/http"
 	post "serverGo/data"
 	"serverGo/db"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -177,8 +178,25 @@ func AddPostUser(c *gin.Context) {
 		return
 	}
 
-	_, err := db.DB.Exec(`CALL public.add_post_user($1, $2, $3, $4)`,
-		userID, req.TextPost, req.Header, req.FalePost)
+	// Если fale_post не пустое, декодируем base64 -> []byte
+	var imageBytes []byte
+	var err error
+	if req.FalePost != "" {
+		// Если есть префикс типа data:image/...;base64, отрезаем
+		if commaIdx := strings.Index(req.FalePost, ","); commaIdx != -1 {
+			req.FalePost = req.FalePost[commaIdx+1:]
+		}
+
+		imageBytes, err = base64.StdEncoding.DecodeString(req.FalePost)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка декодирования изображения", "details": err.Error()})
+			return
+		}
+	}
+
+	// Вызов SQL-процедуры
+	_, err = db.DB.Exec(`CALL public.add_post_user($1, $2, $3, $4)`,
+		userID, req.TextPost, req.Header, imageBytes)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при добавлении поста", "details": err.Error()})

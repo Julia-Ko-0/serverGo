@@ -429,3 +429,29 @@ type SearchPostsResponse struct {
 type SearchAllResponse struct {
 	FoundItems []Post `json:"result_item"`
 }
+
+type AuthorInfo struct {
+	UserID         int    `json:"user_id"`
+	Username       string `json:"username"`
+	ProfilePicture string `json:"profile_picture"`
+}
+
+type FilteredPost struct {
+	PostType           string     `json:"post_type"`
+	PostID             int        `json:"post_id"`
+	UserID             int        `json:"user_id"`
+	Header             string     `json:"header"`
+	Text               string     `json:"text"`
+	FalePost           string     `json:"fale_post"`
+	DateTimePost       string     `json:"dateTime_post"`
+	ViewsPost          int        `json:"views_post"`
+	Repost             int        `json:"repost"`
+	CommentsPermission bool       `json:"comments_permission"`
+	CommentsCount      int        `json:"comments_count"`
+	GroupInfo          *GroupInfo `json:"group_info"` // может быть null
+	Author             AuthorInfo `json:"author"`
+	LikesCount         int        `json:"likes_count"`
+}
+
+// RecommendedPost и FilteredPost одинаковые по структуре
+type RecommendedPost = FilteredPost

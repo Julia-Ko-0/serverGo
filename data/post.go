@@ -21,10 +21,11 @@ type AddChatFolderRequest struct {
 
 //////////////////////////////////////////////////////////
 type AddPostUserRequest struct {
-	TextPost string `json:"text_post" binding:"required"`
+	TextPost string `json:"text_post"`
 	Header   string `json:"header"`
-	FalePost []byte `json:"fale_post"`
+	FalePost string `json:"fale_post"` // <-- тип string, т.к. это base64
 }
+
 type AddRepostRequest struct {
 	PostID     int    `json:"post_id" binding:"required"`
 	TypeRepost string `json:"type_repost" binding:"required"` // 'us' или 'gr'
