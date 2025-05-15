@@ -436,13 +436,14 @@ type AuthorInfo struct {
 	ProfilePicture string `json:"profile_picture"`
 }
 
+// FilteredPost - структура для поста с фильтрами
 type FilteredPost struct {
 	PostType           string     `json:"post_type"`
 	PostID             int        `json:"post_id"`
 	UserID             int        `json:"user_id"`
 	Header             string     `json:"header"`
 	Text               string     `json:"text"`
-	FalePost           string     `json:"fale_post"`
+	FalePost           string     `json:"fale_post"` // хранение изображения в необработанном виде (в бинарном формате)
 	DateTimePost       string     `json:"dateTime_post"`
 	ViewsPost          int        `json:"views_post"`
 	Repost             int        `json:"repost"`
@@ -455,3 +456,36 @@ type FilteredPost struct {
 
 // RecommendedPost и FilteredPost одинаковые по структуре
 type RecommendedPost = FilteredPost
+type RawFilteredPost struct {
+	PostType           string     `json:"post_type"`
+	PostID             int        `json:"post_id"`
+	UserID             int        `json:"user_id"`
+	Header             string     `json:"header"`
+	Text               string     `json:"text"`
+	FalePost           []byte     `json:"fale_post"`
+	DateTimePost       string     `json:"dateTime_post"`
+	ViewsPost          int        `json:"views_post"`
+	Repost             int        `json:"repost"`
+	CommentsPermission bool       `json:"comments_permission"`
+	CommentsCount      int        `json:"comments_count"`
+	GroupInfo          *GroupInfo `json:"group_info"`
+	Author             AuthorInfo `json:"author"`
+	LikesCount         int        `json:"likes_count"`
+}
+
+type FilteredPostResponse struct {
+	PostType           string     `json:"post_type"`
+	PostID             int        `json:"post_id"`
+	UserID             int        `json:"user_id"`
+	Header             string     `json:"header"`
+	Text               string     `json:"text"`
+	FalePostBase64     string     `json:"fale_post"`
+	DateTimePost       string     `json:"dateTime_post"`
+	ViewsPost          int        `json:"views_post"`
+	Repost             int        `json:"repost"`
+	CommentsPermission bool       `json:"comments_permission"`
+	CommentsCount      int        `json:"comments_count"`
+	GroupInfo          *GroupInfo `json:"group_info"`
+	Author             AuthorInfo `json:"author"`
+	LikesCount         int        `json:"likes_count"`
+}

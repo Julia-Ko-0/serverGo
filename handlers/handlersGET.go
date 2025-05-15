@@ -148,36 +148,7 @@ func GetUserPosts(c *gin.Context) {
 		return
 	}
 
-	// Временная структура для разбора JSON + []byte → base64
-	type RawUserPostResponse struct {
-		UserInfo struct {
-			UserID           int    `json:"user_id"`
-			Username         string `json:"login_us"`
-			FirstName        string `json:"firstname"`
-			LastName         string `json:"lastname"`
-			Patronymic       string `json:"patronymic"`
-			Registration     string `json:"dateRegistr"`
-			BirthDate        string `json:"date_of_birth"`
-			CountUs          int    `json:"count_us"`
-			Description      string `json:"description"`
-			ProfilePicture   []byte `json:"profile_picture"` // bytea
-			FriendsCount     int    `json:"friends_count"`
-			SubscribersCount int    `json:"subscribers_count"`
-		} `json:"user_info"`
-
-		Posts []struct {
-			PostID    int    `json:"id_post_us"`
-			Header    string `json:"header"`
-			Text      string `json:"text_post"`
-			DateTime  string `json:"dateTime_post_us"`
-			Comments  bool   `json:"comments_enabled"`
-			Views     int    `json:"views_post"`
-			Repost    int    `json:"repost"`
-			ImageData []byte `json:"fale_post"` // bytea
-		} `json:"posts"`
-	}
-
-	var raw RawUserPostResponse
+	var raw user.RawUserPostResponse
 	if err := json.Unmarshal([]byte(result), &raw); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
@@ -186,47 +157,10 @@ func GetUserPosts(c *gin.Context) {
 	// Преобразуем в финальную структуру, где ImageBase64 уже строка
 	var response user.UserPostResponse
 
-	// Копируем user_info
-	response.UserInfo = struct {
-		UserID           int    `json:"user_id"`
-		Username         string `json:"login_us"`
-		FirstName        string `json:"firstname"`
-		LastName         string `json:"lastname"`
-		Patronymic       string `json:"patronymic"`
-		Registration     string `json:"dateRegistr"`
-		BirthDate        string `json:"date_of_birth"`
-		CountUs          int    `json:"count_us"`
-		Description      string `json:"description"`
-		ProfilePicture   string `json:"profile_picture"`
-		FriendsCount     int    `json:"friends_count"`
-		SubscribersCount int    `json:"subscribers_count"`
-	}{
-		UserID:           raw.UserInfo.UserID,
-		Username:         raw.UserInfo.Username,
-		FirstName:        raw.UserInfo.FirstName,
-		LastName:         raw.UserInfo.LastName,
-		Patronymic:       raw.UserInfo.Patronymic,
-		Registration:     raw.UserInfo.Registration,
-		BirthDate:        raw.UserInfo.BirthDate,
-		CountUs:          raw.UserInfo.CountUs,
-		Description:      raw.UserInfo.Description,
-		ProfilePicture:   "data:image/png;base64," + base64.StdEncoding.EncodeToString(raw.UserInfo.ProfilePicture),
-		FriendsCount:     raw.UserInfo.FriendsCount,
-		SubscribersCount: raw.UserInfo.SubscribersCount,
-	}
-
+	response.UserInfo.ProfilePicture = "data:image/png;base64," + base64.StdEncoding.EncodeToString(raw.UserInfo.ProfilePicture)
 	// Копируем посты
 	for _, p := range raw.Posts {
-		response.Posts = append(response.Posts, struct {
-			PostID      int    `json:"id_post_us"`
-			Header      string `json:"header"`
-			Text        string `json:"text_post"`
-			DateTime    string `json:"dateTime_post_us"`
-			Comments    bool   `json:"comments_enabled"`
-			Views       int    `json:"views_post"`
-			Repost      int    `json:"repost"`
-			ImageBase64 string `json:"fale_post"`
-		}{
+		response.Posts = append(response.Posts, user.PostResponse{
 			PostID:      p.PostID,
 			Header:      p.Header,
 			Text:        p.Text,

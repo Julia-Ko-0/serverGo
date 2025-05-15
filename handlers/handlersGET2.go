@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -686,59 +687,6 @@ func SearchAll(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// // GetRecommendedPosts - обработчик для получения рекомендованных постов
-// func GetRecommendedPosts(c *gin.Context) {
-// 	// Получаем user_id из контекста (предполагается, что он уже был добавлен в контекст через middleware)
-// 	userIDRaw, exists := c.Get("user_id")
-// 	if !exists {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
-// 		return
-// 	}
-
-// 	// Преобразуем user_id в нужный тип
-// 	userID, ok := userIDRaw.(int)
-// 	if !ok {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
-// 		return
-// 	}
-
-// 	// Получаем параметры limit и offset из запроса
-// 	limit := c.DefaultQuery("limit", "10")  // По умолчанию 10
-// 	offset := c.DefaultQuery("offset", "0") // По умолчанию 0
-
-// 	// Преобразуем limit и offset в int
-// 	limitInt, err := strconv.Atoi(limit)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
-// 		return
-// 	}
-
-// 	offsetInt, err := strconv.Atoi(offset)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset"})
-// 		return
-// 	}
-
-// 	// Запрос к базе данных для получения рекомендованных постов
-// 	var jsonResult string
-// 	err = db.DB.QueryRow(`SELECT public.get_recommended_posts($1, $2, $3)`, userID, limitInt, offsetInt).Scan(&jsonResult)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения рекомендованных постов", "details": err.Error()})
-// 		return
-// 	}
-
-// 	// Определяем структуру для хранения постов
-// 	var recommendedPosts []data.RecommendedPost
-// 	if err := json.Unmarshal([]byte(jsonResult), &recommendedPosts); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
-// 		return
-// 	}
-
-// 	// Возвращаем результат
-// 	c.JSON(http.StatusOK, gin.H{"data": recommendedPosts})
-// }
-
-// // GetFilteredPosts - обработчик для получения отфильтрованных постов (друзья, подписки, группы)
 // func GetFilteredPosts(c *gin.Context) {
 // 	userIDRaw, exists := c.Get("user_id")
 // 	if !exists {
@@ -752,69 +700,102 @@ func SearchAll(c *gin.Context) {
 // 		return
 // 	}
 
-// 	// Получаем параметры limit и offset из query
-// 	limitStr := c.DefaultQuery("limit", "10")
-// 	offsetStr := c.DefaultQuery("offset", "0")
+// 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+// 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
-// 	limit, err := strconv.Atoi(limitStr)
+// 	var result string
+// 	err := db.DB.Get(&result, "SELECT * FROM public.get_filtered_posts($1, $2, $3)", userID, limit, offset)
 // 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр limit"})
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
 // 		return
 // 	}
 
-// 	offset, err := strconv.Atoi(offsetStr)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр offset"})
-// 		return
-// 	}
-
-// 	var jsonResult string
-// 	err = db.DB.QueryRow(`SELECT * FROM public.get_filtered_posts($1, $2, $3)`, userID, limit, offset).Scan(&jsonResult)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка выполнения запроса", "details": err.Error()})
-// 		return
-// 	}
-
-// 	var posts data.FilteredPosts // Определи соответствующую структуру в data.FilteredPosts
-// 	if err := json.Unmarshal([]byte(jsonResult), &posts); err != nil {
+// 	var responseData []data.FilteredPost
+// 	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
 // 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 // 		return
 // 	}
 
-//		c.JSON(http.StatusOK, posts)
+// 	c.JSON(http.StatusOK, responseData)
+// }
+
+// func GetRecommendedPosts(c *gin.Context) {
+// 	userIDRaw, exists := c.Get("user_id")
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+// 		return
+// 	}
+
+// 	userID, ok := userIDRaw.(int)
+// 	if !ok {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+// 		return
+// 	}
+
+// 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+// 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+// 	var result string
+// 	err := db.DB.Get(&result, "SELECT * FROM public.get_recommended_posts($1, $2, $3)", userID, limit, offset)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+// 		return
+// 	}
+
+// 	var responseData []data.RecommendedPost
+// 	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+// 		return
+// 	}
+
+//		c.JSON(http.StatusOK, responseData)
 //	}
-func GetFilteredPosts(c *gin.Context) {
-	userIDRaw, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
-		return
-	}
 
-	userID, ok := userIDRaw.(int)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
-		return
-	}
+// func GetFilteredPosts(c *gin.Context) {
+// 	// Получаем user_id из контекста
+// 	userIDRaw, exists := c.Get("user_id")
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+// 		return
+// 	}
 
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+// 	userID, ok := userIDRaw.(int)
+// 	if !ok {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+// 		return
+// 	}
 
-	var result string
-	err := db.DB.Get(&result, "SELECT * FROM public.get_filtered_posts($1, $2, $3)", userID, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
-		return
-	}
+// 	// Получаем параметры limit и offset из запроса
+// 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+// 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
-	var responseData []data.FilteredPost
-	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
-		return
-	}
+// 	// Получаем JSON как строку из функции БД
+// 	// Получаем данные постов из базы данных
+// 	var result string
+// 	err := db.DB.Get(&result, "SELECT * FROM public.get_filtered_posts($1, $2, $3)", userID, limit, offset)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, responseData)
-}
+// 	// Разбираем результат на структуру
+// 	var responseData []data.FilteredPost
+// 	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+// 		return
+// 	}
 
+// 	// Преобразуем поле FalePost (если оно содержит изображение) в Base64
+// 	for i := range responseData {
+// 		if len(responseData[i].FalePost) > 0 {
+// 			// Преобразуем изображение в строку Base64
+// 			responseData[i].FalePost = "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte(responseData[i].FalePost))
+// 		}
+// 	}
+
+// 	c.JSON(http.StatusOK, responseData)
+
+// }
 func GetRecommendedPosts(c *gin.Context) {
 	userIDRaw, exists := c.Get("user_id")
 	if !exists {
@@ -838,11 +819,82 @@ func GetRecommendedPosts(c *gin.Context) {
 		return
 	}
 
-	var responseData []data.RecommendedPost
-	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
+	var rawPosts []data.RawFilteredPost
+	if err := json.Unmarshal([]byte(result), &rawPosts); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, responseData)
+	var finalPosts []data.FilteredPostResponse
+	for _, p := range rawPosts {
+		finalPosts = append(finalPosts, data.FilteredPostResponse{
+			PostType:           p.PostType,
+			PostID:             p.PostID,
+			UserID:             p.UserID,
+			Header:             p.Header,
+			Text:               p.Text,
+			FalePostBase64:     "data:image/png;base64," + base64.StdEncoding.EncodeToString(p.FalePost),
+			DateTimePost:       p.DateTimePost,
+			ViewsPost:          p.ViewsPost,
+			Repost:             p.Repost,
+			CommentsPermission: p.CommentsPermission,
+			CommentsCount:      p.CommentsCount,
+			GroupInfo:          p.GroupInfo,
+			Author:             p.Author,
+			LikesCount:         p.LikesCount,
+		})
+	}
+
+	c.JSON(http.StatusOK, finalPosts)
+}
+func GetFilteredPosts(c *gin.Context) {
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+		return
+	}
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	var result string
+	err := db.DB.Get(&result, "SELECT * FROM public.get_filtered_posts($1, $2, $3)", userID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+		return
+	}
+
+	var rawPosts []data.RawFilteredPost
+	if err := json.Unmarshal([]byte(result), &rawPosts); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+		return
+	}
+
+	var finalPosts []data.FilteredPostResponse
+	for _, p := range rawPosts {
+		finalPosts = append(finalPosts, data.FilteredPostResponse{
+			PostType:           p.PostType,
+			PostID:             p.PostID,
+			UserID:             p.UserID,
+			Header:             p.Header,
+			Text:               p.Text,
+			FalePostBase64:     "data:image/png;base64," + base64.StdEncoding.EncodeToString(p.FalePost),
+			DateTimePost:       p.DateTimePost,
+			ViewsPost:          p.ViewsPost,
+			Repost:             p.Repost,
+			CommentsPermission: p.CommentsPermission,
+			CommentsCount:      p.CommentsCount,
+			GroupInfo:          p.GroupInfo,
+			Author:             p.Author,
+			LikesCount:         p.LikesCount,
+		})
+	}
+
+	c.JSON(http.StatusOK, finalPosts)
 }

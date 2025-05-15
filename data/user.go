@@ -118,3 +118,42 @@ type RepostResponse struct {
 	RepostDate time.Time      `json:"repost_date"`
 	PostInfo   map[string]any `json:"post_info"`
 }
+
+// Временная структура для разбора JSON + []byte → base64
+type RawUserPostResponse struct {
+	UserInfo struct {
+		UserID           int    `json:"user_id"`
+		Username         string `json:"login_us"`
+		FirstName        string `json:"firstname"`
+		LastName         string `json:"lastname"`
+		Patronymic       string `json:"patronymic"`
+		Registration     string `json:"dateRegistr"`
+		BirthDate        string `json:"date_of_birth"`
+		CountUs          int    `json:"count_us"`
+		Description      string `json:"description"`
+		ProfilePicture   []byte `json:"profile_picture"` // bytea
+		FriendsCount     int    `json:"friends_count"`
+		SubscribersCount int    `json:"subscribers_count"`
+	} `json:"user_info"`
+
+	Posts []struct {
+		PostID    int    `json:"id_post_us"`
+		Header    string `json:"header"`
+		Text      string `json:"text_post"`
+		DateTime  string `json:"dateTime_post_us"`
+		Comments  bool   `json:"comments_enabled"`
+		Views     int    `json:"views_post"`
+		Repost    int    `json:"repost"`
+		ImageData []byte `json:"fale_post"` // bytea
+	} `json:"posts"`
+}
+type PostResponse struct {
+	PostID      int    `json:"id_post_us"`
+	Header      string `json:"header"`
+	Text        string `json:"text_post"`
+	DateTime    string `json:"dateTime_post_us"`
+	Comments    bool   `json:"comments_enabled"`
+	Views       int    `json:"views_post"`
+	Repost      int    `json:"repost"`
+	ImageBase64 string `json:"fale_post"`
+}
