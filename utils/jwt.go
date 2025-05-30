@@ -17,8 +17,8 @@ func GenerateToken(userID int, login string, duration time.Duration) (string, er
 
 	// Проверка на пустую переменную окружения
 	if jwtKey == "" {
-		log.Println("JWT_SECRET is EMPTY! Please check your .env file or environment variables.")
-		return "", errors.New("JWT_SECRET is not set in environment variables")
+		log.Println("JWT_SECRET ПУСТ! Пожалуйста, проверьте свой env-файл или переменные среды.")
+		return "", errors.New("Значение JWT_SECRET не задано в переменных окружения")
 	}
 
 	// Создаем claims для токена
@@ -34,7 +34,7 @@ func GenerateToken(userID int, login string, duration time.Duration) (string, er
 	// Подписываем токен с использованием секретного ключа
 	signedToken, err := token.SignedString([]byte(jwtKey))
 	if err != nil {
-		log.Println("Error signing token:", err)
+		log.Println("Error :", err)
 		return "", err
 	}
 
@@ -58,8 +58,8 @@ func ValidateToken(tokenString string) (*Claims, error) {
 	var SecretKey = os.Getenv("JWT_SECRET")
 	// Проверка на пустую переменную окружения
 	if SecretKey == "" {
-		log.Println("JWT_SECRET is EMPTY! Please check your .env file or environment variables.")
-		return nil, errors.New("JWT_SECRET is not set in environment variables")
+		log.Println("JWT_SECRET ПУСТ! Пожалуйста, проверьте свой env-файл или переменные среды.")
+		return nil, errors.New("Значение JWT_SECRET не задано в переменных окружения")
 	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {

@@ -653,37 +653,50 @@ func SearchPosts(c *gin.Context) {
 	// Возвращаем найденные посты
 	c.JSON(http.StatusOK, result)
 }
+
+type SearchRequest struct {
+	Search string `json:"search"`
+}
+
+type SearchAllResponse struct {
+	ResultItem json.RawMessage `db:"result_item" json:"result_item"` // или map[string]interface{}
+}
+
 func SearchAll(c *gin.Context) {
-	// Получаем параметры запроса
-	searchParam := c.DefaultQuery("search", "")               // Параметр поиска
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50")) // Лимит с дефолтным значением 50
+	var req SearchRequest
+	// Читаем JSON из запроса
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат JSON", "details": err.Error()})
+		return
+	}
+
+	if req.Search == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан параметр поиска"})
+		return
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр limit"})
 		return
 	}
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0")) // Оффсет с дефолтным значением 0
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр offset"})
 		return
 	}
 
-	if searchParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан параметр поиска"})
-		return
-	}
-
-	// Запрос к базе данных
-	var result []data.SearchAllResponse
-	query := `
-		SELECT * FROM public.search_all($1, $2, $3)
-	`
-	err = db.DB.Select(&result, query, searchParam, limit, offset)
+	var result []SearchAllResponse
+	query := `SELECT * FROM public.search_all($1, $2, $3)`
+	err = db.DB.Select(&result, query, req.Search, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка выполнения поиска", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка выполнения поиска",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	// Возвращаем найденные элементы
 	c.JSON(http.StatusOK, result)
 }
 

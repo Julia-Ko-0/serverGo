@@ -79,20 +79,6 @@ type LastMessage struct {
 	Username       string `json:"username"`
 	ProfilePicture string `json:"profile_picture"` // base64
 }
-type ChatUser struct {
-	UserID         int    `json:"user_id"`
-	Username       string `json:"username"`
-	Role           string `json:"role"`
-	ProfilePicture string `json:"profile_picture"` // base64 (может быть пустым)
-}
-type ChatMessage struct {
-	ID       int           `json:"id_sms"`
-	Text     string        `json:"text_sms"`
-	DateTime string        `json:"dateTime_sms"`
-	File     string        `json:"file_sms"` // base64
-	Sticker  *StickerInfo  `json:"sticker"`  // может быть null
-	User     MessageSender `json:"user"`     // вложенный объект
-}
 
 type MessageSender struct {
 	UserID         int    `json:"user_id"`
@@ -156,4 +142,60 @@ type PostResponse struct {
 	Views       int    `json:"views_post"`
 	Repost      int    `json:"repost"`
 	ImageBase64 string `json:"fale_post"`
+}
+
+//
+// //////////////////////////////////////////////////////////////////////////
+// /////////////////////////
+// //////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////
+type ChatMessage struct {
+	ID       int           `json:"id_sms"`
+	Text     string        `json:"text_sms"`
+	DateTime string        `json:"dateTime_sms"`
+	File     string        `json:"file_sms"` // base64
+	Sticker  *StickerInfo  `json:"sticker"`  // может быть null
+	User     MessageSender `json:"user"`     // вложенный объект
+}
+type RawChatMessage struct {
+	ID       int             `json:"id_sms"`
+	Text     string          `json:"text_sms"`
+	DateTime string          `json:"dateTime_sms"`
+	File     []byte          `json:"file_sms"`
+	Sticker  *StickerInfoRaw `json:"sticker"`
+	User     MessageSender   `json:"user"`
+}
+
+type StickerInfoRaw struct {
+	StickerID     int    `json:"sticker_id"`
+	StickerPackID int    `json:"sticker_pack_id"`
+	Image         []byte `json:"img_sticker"`
+}
+type RawChatInfo struct {
+	ChatID     int    `json:"chat_id"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	LastUpdate string `json:"last_update"`
+	Photo      []byte `json:"photo"`
+}
+type ChatInfo struct {
+	ChatID     int    `json:"chat_id"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	LastUpdate string `json:"last_update"`
+	Photo      string `json:"photo"`
+}
+type RawChatUser struct {
+	UserID         int    `json:"user_id"`
+	Login          string `json:"login"`
+	FirstName      string `json:"firstname"`
+	LastName       string `json:"lastname"`
+	ProfilePicture []byte `json:"profile_picture"`
+}
+type ChatUser struct {
+	UserID         int    `json:"user_id"`
+	Username       string `json:"username"`
+	Role           string `json:"role"`
+	ProfilePicture string `json:"profile_picture"` // base64 (может быть пустым)
 }
