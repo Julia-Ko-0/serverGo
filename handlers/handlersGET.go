@@ -114,7 +114,7 @@ func GetUserFolders(c *gin.Context) {
 	// Запрос к БД
 	err := db.DB.Get(&result, "SELECT * from public.get_user_chat_folders_only($1)", userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения ", "details": err.Error()})
 		return
 	}
 	var responseData []user.ChatFolder
@@ -306,21 +306,23 @@ func GetUserChatInfo(c *gin.Context) {
 
 // Получение сообщений чата
 func GetUserChatMessenges(c *gin.Context) {
-
-	chet_id := c.Param("chet_id")
-	if chet_id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "chet_id обязателен"})
+	chatID, err := strconv.Atoi(c.Param("chet_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "chet_id должен быть числом"})
 		return
 	}
 
-	// Читаем лимит и оффсет
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, err1 := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, err2 := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if err1 != nil || err2 != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные limit или offset"})
+		return
+	}
 
 	var result string
-	err := db.DB.Get(&result, "SELECT * FROM public.get_chat_messages($1, $2, $3)", chet_id, limit, offset)
+	err = db.DB.Get(&result, "SELECT * FROM public.get_chat_messages($1, $2, $3)", chatID, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения сообщений", "details": err.Error()})
 		return
 	}
 

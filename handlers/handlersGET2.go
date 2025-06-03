@@ -157,37 +157,6 @@ func GetChatsByFolder(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", []byte(result))
 }
 
-func GetUserChatFolders(c *gin.Context) {
-	// Получаем user_id из контекста
-	userIDRaw, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
-		return
-	}
-
-	userID, ok := userIDRaw.(int)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
-		return
-	}
-
-	var result string
-	// Запрос к функции в БД
-	err := db.DB.Get(&result, "SELECT * FROM public.get_user_chat_folders_only($1)", userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения папок чатов", "details": err.Error()})
-		return
-	}
-
-	var folders data.ChatFolderResponse
-	// Декодируем JSON
-	if err := json.Unmarshal([]byte(result), &folders); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, folders)
-}
 func GetChatsByFolderAndUser(c *gin.Context) {
 	// Получаем user_id
 	userIDRaw, exists := c.Get("user_id")
