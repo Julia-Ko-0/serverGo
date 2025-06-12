@@ -225,25 +225,30 @@ func GetUserChat(c *gin.Context) {
 	}
 
 	var result string
-	// Запрос к БД
-	err := db.DB.Get(&result, "SELECT * from public.get_user_chats($1)", userID)
+	err := db.DB.Get(&result, "SELECT * FROM public.get_user_chats($1)", userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения чатов", "details": err.Error()})
 		return
 	}
-	// c.JSON(http.StatusOK, result)
-	var responseData []user.UserChats
-	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
+
+	var chats []user.UserChats
+	if err := json.Unmarshal([]byte(result), &chats); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, responseData)
+	// Преобразование pfoto из base64
+	for i := range chats {
+		if chats[i].Photo != "" {
+			chats[i].Photo = "data:image/png;base64," + chats[i].Photo
+		}
+	}
+
+	c.JSON(http.StatusOK, chats)
 }
 
 // Получение чатов папки
 func GetUserChatFolsers(c *gin.Context) {
-
 	id_chatFolders := c.Param("folder")
 	if id_chatFolders == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Folders обязателен"})
@@ -263,17 +268,23 @@ func GetUserChatFolsers(c *gin.Context) {
 	}
 
 	var result string
-	// Запрос к БД
-	err := db.DB.Get(&result, "SELECT * from public.get_chats_by_folder_and_user($1, $2)", userID, id_chatFolders)
+	err := db.DB.Get(&result, "SELECT * FROM public.get_chats_by_folder_and_user($1, $2)", userID, id_chatFolders)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения чатов", "details": err.Error()})
 		return
 	}
-	// c.JSON(http.StatusOK, result)
+
 	var responseData []user.UserChats
 	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
+	}
+
+	// Преобразование поля pfoto в data URI
+	for i := range responseData {
+		if responseData[i].Photo != "" {
+			responseData[i].Photo = "data:image/png;base64," + responseData[i].Photo
+		}
 	}
 
 	c.JSON(http.StatusOK, responseData)
