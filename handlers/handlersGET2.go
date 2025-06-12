@@ -880,3 +880,110 @@ func GetFilteredPosts(c *gin.Context) {
 
 	c.JSON(http.StatusOK, finalPosts)
 }
+
+type ChatFolderBool struct {
+	IDChat        int     `json:"id_chat"`
+	NameChat      string  `json:"name_chat"`
+	CountChatPepl string  `json:"countChatPepl"`
+	Pfoto         *string `json:"pfoto"` // Здесь используем указатель на строку, чтобы поддерживать null
+	DateTimeChat  string  `json:"dateTime_chat"`
+	IsInFolder    bool    `json:"is_in_folder"`
+	LastMessage   struct {
+		TextSMS        string  `json:"text_sms"`
+		DateTimeSMS    string  `json:"dateTime_sms"`
+		UserID         int     `json:"user_id"`
+		Username       string  `json:"username"`
+		ProfilePicture *string `json:"profile_picture"` // Используем указатель для возможности null
+	} `json:"last_message"`
+}
+
+// GetUserChatFolders - обработчик запросов для получения чатов пользователя по папке
+// GetUserChatFolders - обработчик запросов для получения чатов пользователя по папке
+func GetUserChatFoldersBoolen(c *gin.Context) {
+	// Получаем параметр папки из URL
+	idChatFolderRaw := c.Param("folder")
+	if idChatFolderRaw == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Folder is required"})
+		return
+	}
+
+	// Преобразуем строку в целое число
+	idChatFolder, err := strconv.Atoi(idChatFolderRaw)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid folder ID"})
+		return
+	}
+
+	// Получаем userID из контекста
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user_id type"})
+		return
+	}
+
+	// Параметры пагинации
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	// Логируем параметры перед запросом для отладки
+	log.Printf("Fetching chats for userID: %d, folderID: %d, limit: %d, offset: %d", userID, idChatFolder, limit, offset)
+
+	// Выполняем запрос к базе данных
+	var result string
+	err = db.DB.Get(&result, "SELECT * FROM public.get_user_chats_folderAdd($1, $2, $3, $4)", userID, idChatFolder, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching chats", "details": err.Error()})
+		return
+	}
+
+	// Преобразуем результат в структуру
+	var responseData []ChatFolderBool
+	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing JSON", "details": err.Error()})
+		return
+	}
+
+	// Возвращаем результат
+	c.JSON(http.StatusOK, responseData)
+}
+
+func GetChatDetails(c *gin.Context) {
+	chatID := c.Param("chat_id")
+	if chatID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "chat_id обязателен"})
+		return
+	}
+
+	var result string
+	err := db.DB.Get(&result, "SELECT public.get_chat_details($1)", chatID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения данных о чате", "details": err.Error()})
+		return
+	}
+
+	var chatDetails data.ChatDetailsResponse
+	if err := json.Unmarshal([]byte(result), &chatDetails); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+		return
+	}
+
+	// Обработка фото чата
+	if chatDetails.ChatInfo.PFoto != "" {
+		chatDetails.ChatInfo.PFoto = "data:image/png;base64," + chatDetails.ChatInfo.PFoto
+	}
+
+	// Обработка фото пользователей
+	for i := range chatDetails.UsersInfo {
+		if chatDetails.UsersInfo[i].ProfilePicture != "" {
+			chatDetails.UsersInfo[i].ProfilePicture = "data:image/png;base64," + chatDetails.UsersInfo[i].ProfilePicture
+		}
+	}
+
+	c.JSON(http.StatusOK, chatDetails)
+}

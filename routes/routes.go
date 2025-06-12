@@ -31,8 +31,9 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/user/chats", handlers.GetUserChat)
 		auth.POST("/user/chats/:folder", handlers.GetUserChatFolsers)
 		auth.POST("/user/chats/info/:chet_id", handlers.GetUserChatInfo)
+		auth.POST("/user/chats/info_details/:chat_id", handlers.GetChatDetails)
 		auth.POST("/user/chats/messages/:chet_id", handlers.GetUserChatMessenges)
-
+		auth.POST("/user/chats/boolen/:folder", handlers.GetUserChatFoldersBoolen)
 		// История изменений имени пользователя
 		auth.POST("/user/name-history", handlers.GetUserNameHistory)
 
@@ -142,6 +143,9 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/recommended-posts", handlers.GetRecommendedPosts)
 		auth.POST("/filtered-posts", handlers.GetFilteredPosts)
 		auth.POST("/get-user-chat-folders", handlers.GetUserFolders)
+
+		//обновить имя и фото чата
+		auth.POST("/chat/update", handlers.UpdateChatInfo)
 
 	}
 }

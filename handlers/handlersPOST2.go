@@ -7,6 +7,7 @@ import (
 	"serverGo/data"
 	"serverGo/db"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
@@ -875,4 +876,43 @@ func AddToFavourites(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "Добавлено в избранное"})
+}
+
+func UpdateChatInfo(c *gin.Context) {
+	_, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	var req data.UpdateChatInfoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный JSON", "details": err.Error()})
+		return
+	}
+
+	// Обработка изображения: декод base64
+	var imageBytes []byte
+	if req.Pfoto != "" {
+		if commaIdx := strings.Index(req.Pfoto, ","); commaIdx != -1 {
+			req.Pfoto = req.Pfoto[commaIdx+1:]
+		}
+
+		decoded, err := base64.StdEncoding.DecodeString(req.Pfoto)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка декодирования изображения", "details": err.Error()})
+			return
+		}
+		imageBytes = decoded
+	} else {
+		imageBytes = nil // null передаём в SQL
+	}
+
+	_, err := db.DB.Exec("SELECT update_chat_info($1, $2, $3)", req.ChatID, req.NameChat, imageBytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обновления чата", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Чат успешно обновлён"})
 }

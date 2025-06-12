@@ -264,7 +264,7 @@ func GetUserChatFolsers(c *gin.Context) {
 
 	var result string
 	// Запрос к БД
-	err := db.DB.Get(&result, "SELECT * from public.get_user_chats($1, $2)", userID, id_chatFolders)
+	err := db.DB.Get(&result, "SELECT * from public.get_chats_by_folder_and_user($1, $2)", userID, id_chatFolders)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
 		return

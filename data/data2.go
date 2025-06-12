@@ -489,3 +489,28 @@ type FilteredPostResponse struct {
 	Author             AuthorInfo `json:"author"`
 	LikesCount         int        `json:"likes_count"`
 }
+type ChatUserInfo struct {
+	UserID         int    `json:"user_id"`
+	Username       string `json:"username"`
+	Role           string `json:"role"`
+	ProfilePicture string `json:"profile_picture"` // Преобразованное фото в base64
+}
+
+type ChatDetailsResponse struct {
+	ChatInfo struct {
+		IDChat        int    `json:"id_chat"`
+		NameChat      string `json:"name_chat"`
+		CountChatPepl string `json:"countchatpepl"`
+		UserIDAdmin   int    `json:"user_id_admin"`
+		DateTimeChat  string `json:"datetime_chat"`
+		PFoto         string `json:"pfoto"` // Фото чата в base64
+	} `json:"chat_info"`
+
+	UsersInfo []ChatUserInfo `json:"users_info"`
+}
+
+type UpdateChatInfoRequest struct {
+	ChatID   int    `json:"chat_id" binding:"required"`
+	NameChat string `json:"name_chat"`
+	Pfoto    string `json:"pfoto"` // base64-строка с префиксом или без
+}
