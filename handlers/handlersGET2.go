@@ -713,9 +713,9 @@ func SearchAll(c *gin.Context) {
 		return
 	}
 
-	var rawResults []string
-	query := `SELECT * FROM public.search_all($1, $2, $3)`
-	err = db.DB.Select(&rawResults, query, req.Search, limit, offset)
+	var result string
+	query := `SELECT jsonb_agg(result_item)::text FROM public.search_all($1, $2, $3)`
+	err = db.DB.Get(&result, query, req.Search, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Ошибка выполнения поиска",
@@ -724,29 +724,23 @@ func SearchAll(c *gin.Context) {
 		return
 	}
 
-	var parsedResults []map[string]interface{}
-
-	for _, raw := range rawResults {
-		var item map[string]interface{}
-		if err := json.Unmarshal([]byte(raw), &item); err != nil {
-			continue // или логировать
-		}
-
-		// Преобразование base64-картинок, если есть поле с картинкой
-		if val, ok := item["profile_picture"].(string); ok && val != "" {
-			item["profile_picture"] = "data:image/png;base64," + val
-		}
-		if val, ok := item["photo"].(string); ok && val != "" {
-			item["photo"] = "data:image/png;base64," + val
-		}
-		if val, ok := item["image"].(string); ok && val != "" {
-			item["image"] = "data:image/png;base64," + val
-		}
-
-		parsedResults = append(parsedResults, item)
+	var results []data.SearchResult
+	if err := json.Unmarshal([]byte(result), &results); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+		return
 	}
 
-	c.JSON(http.StatusOK, parsedResults)
+	// Обработка base64 картинок
+	for i := range results {
+		if results[i].ProfilePicture != "" {
+			results[i].ProfilePicture = "data:image/png;base64," + results[i].ProfilePicture
+		}
+		if results[i].FilePost != "" {
+			results[i].FilePost = "data:image/png;base64," + results[i].FilePost
+		}
+	}
+
+	c.JSON(http.StatusOK, results)
 }
 
 // func GetFilteredPosts(c *gin.Context) {

@@ -522,3 +522,27 @@ type SearchPostsResponse struct {
 	TotalCount int    `json:"total_count"` // Количество найденных постов
 	Posts      []Post `json:"posts"`       // Список постов
 }
+
+type SearchResult struct {
+	Type string `json:"type"`
+	// Дальнейшее содержимое в зависимости от типа
+	ID             *int   `json:"id,omitempty"`              // user, group
+	Username       string `json:"username,omitempty"`        // user
+	Firstname      string `json:"firstname,omitempty"`       // user
+	Lastname       string `json:"lastname,omitempty"`        // user
+	Email          string `json:"email,omitempty"`           // user
+	ProfilePicture string `json:"profile_picture,omitempty"` // user
+
+	Name        string   `json:"name,omitempty"`        // group
+	Description string   `json:"description,omitempty"` // group
+	Tags        []string `json:"tags,omitempty"`        // group
+
+	PostID   *int   `json:"post_id,omitempty"`   // post_user, post_group
+	Header   string `json:"header,omitempty"`    // post_user, post_group
+	Text     string `json:"text,omitempty"`      // post_user, post_group
+	DatePost string `json:"date_post,omitempty"` // post_user, post_group
+	FilePost string `json:"file_post,omitempty"` // post_user, post_group
+
+	Author *AuthorInfo `json:"author,omitempty"` // post_user, post_group
+	Group  *GroupInfo  `json:"group,omitempty"`  // post_group
+}
