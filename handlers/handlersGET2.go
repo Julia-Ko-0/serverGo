@@ -523,117 +523,175 @@ func GetUserFavouriteSMS(c *gin.Context) {
 
 	c.JSON(http.StatusOK, results)
 }
+
+// ..........................................................................
+//
+// .......................................................................................
+
 func SearchGroups(c *gin.Context) {
-	// Получаем параметры поиска из запроса
-	searchParam := c.DefaultQuery("search", "")               // Параметр поиска
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50")) // Лимит с дефолтным значением 50
+	var req data.SearchRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат JSON", "details": err.Error()})
+		return
+	}
+
+	if req.Search == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан параметр поиска"})
+		return
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр limit"})
 		return
 	}
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0")) // Оффсет с дефолтным значением 0
+
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр offset"})
 		return
 	}
 
-	if searchParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан параметр поиска"})
-		return
-	}
-
-	// Запрос к базе данных
-	var result []data.GroupSearchResult
-	query := `
-		SELECT * FROM public.search_groups($1, $2, $3)
-	`
-	err = db.DB.Select(&result, query, searchParam, limit, offset)
+	var rawResults []string
+	query := `SELECT * FROM public.search_groups($1, $2, $3)`
+	err = db.DB.Select(&rawResults, query, req.Search, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка выполнения поиска", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка выполнения поиска",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	// Возвращаем найденные группы
-	c.JSON(http.StatusOK, result)
+	var parsedResults []map[string]interface{}
+
+	for _, raw := range rawResults {
+		var item map[string]interface{}
+		if err := json.Unmarshal([]byte(raw), &item); err != nil {
+			continue // или логировать
+		}
+
+		// Обработка base64 картинок, если есть
+		if val, ok := item["profile_picture"].(string); ok && val != "" {
+			item["profile_picture"] = "data:image/png;base64," + val
+		}
+
+		parsedResults = append(parsedResults, item)
+	}
+
+	c.JSON(http.StatusOK, parsedResults)
 }
-func SearchUsers(c *gin.Context) {
-	// Получаем параметры поиска из запроса
-	searchParam := c.DefaultQuery("search", "")               // Параметр поиска
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50")) // Лимит с дефолтным значением 50
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр limit"})
-		return
-	}
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0")) // Оффсет с дефолтным значением 0
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр offset"})
-		return
-	}
 
-	if searchParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан параметр поиска"})
-		return
-	}
-
-	// Запрос к базе данных
-	var result []data.UserSearchResult
-	query := `
-		SELECT * FROM public.search_users($1, $2, $3)
-	`
-	err = db.DB.Select(&result, query, searchParam, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка выполнения поиска", "details": err.Error()})
-		return
-	}
-
-	// Возвращаем найденных пользователей
-	c.JSON(http.StatusOK, result)
-}
 func SearchPosts(c *gin.Context) {
-	// Получаем параметры поиска из запроса
-	searchParam := c.DefaultQuery("search", "")               // Параметр поиска
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50")) // Лимит с дефолтным значением 50
+	var req data.SearchRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат JSON", "details": err.Error()})
+		return
+	}
+
+	if req.Search == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан параметр поиска"})
+		return
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр limit"})
 		return
 	}
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0")) // Оффсет с дефолтным значением 0
+
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр offset"})
 		return
 	}
 
-	if searchParam == "" {
+	var rawResults []string
+	query := `SELECT * FROM public.search_posts($1, $2, $3)`
+	err = db.DB.Select(&rawResults, query, req.Search, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка выполнения поиска",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	var parsedResults []map[string]interface{}
+
+	for _, raw := range rawResults {
+		var item map[string]interface{}
+		if err := json.Unmarshal([]byte(raw), &item); err != nil {
+			continue // или логировать
+		}
+
+		// Обработка base64 картинок, если есть
+		if val, ok := item["file_post"].(string); ok && val != "" {
+			item["file_post"] = "data:image/png;base64," + val
+		}
+
+		parsedResults = append(parsedResults, item)
+	}
+
+	c.JSON(http.StatusOK, parsedResults)
+}
+
+func SearchUsers(c *gin.Context) {
+	var req data.SearchRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат JSON", "details": err.Error()})
+		return
+	}
+
+	if req.Search == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан параметр поиска"})
 		return
 	}
 
-	// Запрос к базе данных
-	var result []data.SearchPostsResponse
-	query := `
-		SELECT * FROM public.search_posts($1, $2, $3)
-	`
-	err = db.DB.Select(&result, query, searchParam, limit, offset)
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка выполнения поиска", "details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр limit"})
 		return
 	}
 
-	// Возвращаем найденные посты
-	c.JSON(http.StatusOK, result)
-}
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный параметр offset"})
+		return
+	}
 
-type SearchRequest struct {
-	Search string `json:"search"`
-}
+	var rawResults []string
+	query := `SELECT * FROM public.search_users($1, $2, $3)`
+	err = db.DB.Select(&rawResults, query, req.Search, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка выполнения поиска",
+			"details": err.Error(),
+		})
+		return
+	}
 
-type SearchAllResponse struct {
-	ResultItem json.RawMessage `db:"result_item" json:"result_item"` // или map[string]interface{}
+	var parsedResults []map[string]interface{}
+
+	for _, raw := range rawResults {
+		var item map[string]interface{}
+		if err := json.Unmarshal([]byte(raw), &item); err != nil {
+			continue // или логировать
+		}
+
+		// Обработка base64 картинок, если есть
+		if val, ok := item["profile_picture"].(string); ok && val != "" {
+			item["profile_picture"] = "data:image/png;base64," + val
+		}
+
+		parsedResults = append(parsedResults, item)
+	}
+
+	c.JSON(http.StatusOK, parsedResults)
 }
 
 func SearchAll(c *gin.Context) {
-	var req SearchRequest
-	// Читаем JSON из запроса
+	var req data.SearchRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат JSON", "details": err.Error()})
 		return
@@ -655,9 +713,9 @@ func SearchAll(c *gin.Context) {
 		return
 	}
 
-	var result []SearchAllResponse
+	var rawResults []string
 	query := `SELECT * FROM public.search_all($1, $2, $3)`
-	err = db.DB.Select(&result, query, req.Search, limit, offset)
+	err = db.DB.Select(&rawResults, query, req.Search, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Ошибка выполнения поиска",
@@ -666,7 +724,29 @@ func SearchAll(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+	var parsedResults []map[string]interface{}
+
+	for _, raw := range rawResults {
+		var item map[string]interface{}
+		if err := json.Unmarshal([]byte(raw), &item); err != nil {
+			continue // или логировать
+		}
+
+		// Преобразование base64-картинок, если есть поле с картинкой
+		if val, ok := item["profile_picture"].(string); ok && val != "" {
+			item["profile_picture"] = "data:image/png;base64," + val
+		}
+		if val, ok := item["photo"].(string); ok && val != "" {
+			item["photo"] = "data:image/png;base64," + val
+		}
+		if val, ok := item["image"].(string); ok && val != "" {
+			item["image"] = "data:image/png;base64," + val
+		}
+
+		parsedResults = append(parsedResults, item)
+	}
+
+	c.JSON(http.StatusOK, parsedResults)
 }
 
 // func GetFilteredPosts(c *gin.Context) {

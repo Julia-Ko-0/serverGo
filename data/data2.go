@@ -381,21 +381,6 @@ type FavouriteSMS struct {
 	Patronymic     string `json:"patronymic"`
 	ProfilePicture []byte `json:"profile_picture"`
 }
-type GroupSearchResult struct {
-	GroupID     int      `json:"group_id"`
-	GroupName   string   `json:"group_name"`
-	Description string   `json:"description"`
-	Tags        []string `json:"tags"` // Массив тегов
-}
-type UserSearchResult struct {
-	UserID         int    `json:"user_id"`
-	Username       string `json:"username"`
-	FirstName      string `json:"firstname"`
-	LastName       string `json:"lastname"`
-	Patronymic     string `json:"patronymic"`
-	Description    string `json:"description"`
-	ProfilePicture string `json:"profile_picture"` // base64 строка изображения
-}
 
 type Author struct {
 	UserID         int    `json:"user_id"`
@@ -420,10 +405,6 @@ type Post struct {
 	FilePost string `json:"file_post"` // base64 строка файла, если есть
 	Author   Author `json:"author"`
 	Group    *Group `json:"group,omitempty"` // Если пост от группы
-}
-
-type SearchPostsResponse struct {
-	FoundPost []Post `json:"found_post"`
 }
 
 type SearchAllResponse struct {
@@ -513,4 +494,31 @@ type UpdateChatInfoRequest struct {
 	ChatID   int    `json:"chat_id" binding:"required"`
 	NameChat string `json:"name_chat"`
 	Pfoto    string `json:"pfoto"` // base64-строка с префиксом или без
+}
+type SearchRequest struct {
+	Search string `json:"search"`
+}
+type GroupSearchResult struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Photo       string `json:"photo"` // Base64 encoded image
+	Description string `json:"description"`
+}
+type UserSearchResult struct {
+	ID             int    `json:"id"`
+	Username       string `json:"username"`
+	FullName       string `json:"full_name"`
+	ProfilePicture string `json:"profile_picture"` // Base64 encoded image
+}
+type PostSearchResult struct {
+	ID       int    `json:"id"`
+	Title    string `json:"title"`
+	Content  string `json:"content"`
+	AuthorID int    `json:"author_id"`
+	FilePost string `json:"file_post"` // Base64 encoded image
+}
+
+type SearchPostsResponse struct {
+	TotalCount int    `json:"total_count"` // Количество найденных постов
+	Posts      []Post `json:"posts"`       // Список постов
 }
