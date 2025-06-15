@@ -987,3 +987,40 @@ func GetChatDetails(c *gin.Context) {
 
 	c.JSON(http.StatusOK, chatDetails)
 }
+func AreFriends(c *gin.Context) {
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+		return
+	}
+
+	otherIDParam := c.Param("id") // URL: /friends/check/:id
+	otherID, err := strconv.Atoi(otherIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный ID второго пользователя"})
+		return
+	}
+
+	var areFriends bool
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM friends 
+			WHERE (user_id = $1 AND user_id_f = $2) 
+			   OR (user_id = $2 AND user_id_f = $1)
+		);
+	`
+
+	err = db.DB.Get(&areFriends, query, userID, otherID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка проверки дружбы", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"are_friends": areFriends})
+}

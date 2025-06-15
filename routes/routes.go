@@ -21,7 +21,7 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Получение информации о пользователе
 		auth.POST("/user_info", handlers.GetUserInfo)
-		auth.POST("/user_info/:login", handlers.GetUserInfo)
+		auth.POST("/users_info/:login", handlers.GetUsersInfo)
 
 		// Получение постов пользователя
 		auth.POST("/user_info_post", handlers.GetUserPosts)
@@ -146,6 +146,8 @@ func SetupRoutes(r *gin.Engine) {
 
 		//обновить имя и фото чата
 		auth.POST("/chat/update", handlers.UpdateChatInfo)
+		// проверка есть ли в друзьях
+		auth.POST("/friends/check/:id", handlers.AreFriends)
 
 	}
 }

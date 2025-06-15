@@ -38,7 +38,6 @@ func getUserIDByLogin(login string) (int, error) {
 //
 // Получение информации о пользователе по логину
 func GetUsersInfo(c *gin.Context) {
-
 	login := c.Param("login")
 	if login == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Login обязателен"})
@@ -46,7 +45,6 @@ func GetUsersInfo(c *gin.Context) {
 	}
 
 	userID, err := getUserIDByLogin(login)
-
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Пользователь не найден", "details": err.Error()})
 		return
@@ -64,12 +62,17 @@ func GetUsersInfo(c *gin.Context) {
 		return
 	}
 
+	// Обработка фото (если есть)
+	if userResponse.ProfilePicture != nil && *userResponse.ProfilePicture != "" {
+		prefixed := "data:image/png;base64," + *userResponse.ProfilePicture
+		userResponse.ProfilePicture = &prefixed
+	}
+
 	c.JSON(http.StatusOK, gin.H{"user_info": userResponse})
 }
 
 // пол инф о пользователе
 func GetUserInfo(c *gin.Context) {
-
 	userIDRaw, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
@@ -81,6 +84,7 @@ func GetUserInfo(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
 		return
 	}
+
 	userInfoStr, err := db.GetUserInfo(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения данных о пользователе", "details": err.Error()})
@@ -91,6 +95,11 @@ func GetUserInfo(c *gin.Context) {
 	if err := json.Unmarshal([]byte(userInfoStr), &userResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
+	}
+
+	if userResponse.ProfilePicture != nil && *userResponse.ProfilePicture != "" {
+		prefixed := "data:image/png;base64," + *userResponse.ProfilePicture
+		userResponse.ProfilePicture = &prefixed
 	}
 
 	c.JSON(http.StatusOK, gin.H{"user_info": userResponse})

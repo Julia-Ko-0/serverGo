@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"serverGo/db"
 	"serverGo/utils" // Подключаем utils для использования функции GenerateToken
@@ -79,44 +80,46 @@ func LoginUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Авторизация успешна"})
 }
 
-// handlers/auth.go
-
-// // Функция для проверки авторизации
-// func CheckAuth(c *gin.Context) {
-// 	// Проверка наличия токена доступа в куках
-// 	accessToken, err := c.Cookie("access_token")
-// 	if err != nil {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Токен доступа отсутствует"})
-// 		return
-// 	}
-
-// 	// Проверка валидности токена
-// 	claims, err := utils.ValidateToken(accessToken)
-// 	if err != nil {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неверный или истёкший токен"})
-// 		return
-// 	}
-
-//		// Все в порядке — пользователь авторизован
-//		c.JSON(http.StatusOK, gin.H{"message": "Пользователь авторизован", "user_id": claims.UserID, "login": claims.Login})
-//	}
-//
 // Функция для проверки авторизации
 func CheckAuth(c *gin.Context) {
-	// Проверка наличия токена доступа в куках
 	accessToken, err := c.Cookie("access_token")
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Токен доступа отсутствует"})
-		return
+	if err == nil {
+		if claims, err := utils.ValidateToken(accessToken); err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Пользователь авторизован",
+				"user_id": claims.UserID,
+				"login":   claims.Login,
+			})
+			return
+		}
 	}
 
-	// Проверка валидности токена
-	claims, err := utils.ValidateToken(accessToken)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неверный или истёкший токен"})
-		return
+	// Попробовать refresh_token
+	refreshToken, err := c.Cookie("refresh_token")
+	fmt.Println("refresh_token:", refreshToken)
+	if err == nil {
+		if claims, err := utils.ValidateToken(refreshToken); err == nil {
+			// Выдать новый access_token
+			newAccessToken, err := utils.GenerateToken(claims.UserID, claims.Login, 1*time.Hour)
+			if err == nil {
+				http.SetCookie(c.Writer, &http.Cookie{
+					Name:     "access_token",
+					Value:    newAccessToken,
+					Path:     "/",
+					HttpOnly: true,
+					Secure:   true,
+					SameSite: http.SameSiteStrictMode,
+				})
+
+				c.JSON(http.StatusOK, gin.H{
+					"message": "Пользователь авторизован (по refresh токену)",
+					"user_id": claims.UserID,
+					"login":   claims.Login,
+				})
+				return
+			}
+		}
 	}
 
-	// Все в порядке — пользователь авторизован
-	c.JSON(http.StatusOK, gin.H{"message": "Пользователь авторизован", "user_id": claims.UserID, "login": claims.Login})
+	c.JSON(http.StatusUnauthorized, gin.H{"error": "Неавторизован"})
 }
