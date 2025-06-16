@@ -100,7 +100,7 @@ func SetupRoutes(r *gin.Engine) {
 		// Управление группами
 		auth.POST("/user/group/add", handlers.AddGroup)
 		auth.POST("/group/:group_id/subscribers", handlers.GetGroupSubscribers)
-		auth.POST("/group/:group_id/posts", handlers.GetGroupPostsInfo)
+		auth.POST("/group/:group_id/posts", handlers.GetGroupPosts)
 		auth.POST("/group/:group_id/add-post-comment", handlers.AddCommentToGroupPost)
 		auth.POST("/group/:group_id/blacklist/add", handlers.AddUserToGroupBlacklist)
 		auth.POST("/group/:group_id/blacklist/remove", handlers.RemoveUserFromGroupBlacklist)

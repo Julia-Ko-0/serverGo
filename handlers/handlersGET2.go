@@ -252,37 +252,37 @@ func GetGroupSubscribers(c *gin.Context) {
 
 // GetGroupPosts — получение информации о группе и её постах
 
-func GetGroupPostsInfo(c *gin.Context) {
-	groupIDStr := c.Param("group_id")
-	if groupIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id обязателен"})
-		return
-	}
-	groupID, err := strconv.Atoi(groupIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id должен быть числом"})
-		return
-	}
+// func GetGroupPostsInfo(c *gin.Context) {
+// 	groupIDStr := c.Param("group_id")
+// 	if groupIDStr == "" {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id обязателен"})
+// 		return
+// 	}
+// 	groupID, err := strconv.Atoi(groupIDStr)
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id должен быть числом"})
+// 		return
+// 	}
 
-	// Считываем limit и offset с параметрами по умолчанию
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+// 	// Считываем limit и offset с параметрами по умолчанию
+// 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+// 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
-	var result string
-	err = db.DB.Get(&result, "SELECT * FROM public.get_group_posts($1, $2, $3)", groupID, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
-		return
-	}
+// 	var result string
+// 	err = db.DB.Get(&result, "SELECT * FROM public.get_group_posts($1, $2, $3)", groupID, limit, offset)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+// 		return
+// 	}
 
-	var response data.GroupPostsResponse
-	if err := json.Unmarshal([]byte(result), &response); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
-		return
-	}
+// 	var response data.GroupPostsResponse
+// 	if err := json.Unmarshal([]byte(result), &response); err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, response)
-}
+// 	c.JSON(http.StatusOK, response)
+// }
 
 // GetFeaturesInfo — получает информацию обо всех возможностях
 
@@ -1221,38 +1221,31 @@ func GetGroupPosts(c *gin.Context) {
 		return
 	}
 
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-
-	var rawResult string
-	err = db.DB.Get(&rawResult, "SELECT * FROM public.get_group_posts($1, $2, $3)", groupID, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения данных", "details": err.Error()})
+	limit, err1 := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, err2 := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if err1 != nil || err2 != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные limit или offset"})
 		return
 	}
 
-	var responseData data.GroupPostResponse
-	if err := json.Unmarshal([]byte(rawResult), &responseData); err != nil {
+	var result string
+	err = db.DB.Get(&result, "SELECT * FROM public.get_group_posts($1, $2, $3)", groupID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+		return
+	}
+
+	var raw data.RawGroupPostsResponse
+	if err := json.Unmarshal([]byte(result), &raw); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
 	}
 
-	// Префикс для изображений
-	if responseData.GroupInfo.Owner.ProfilePicture != "" {
-		responseData.GroupInfo.Owner.ProfilePicture = "data:image/png;base64," + responseData.GroupInfo.Owner.ProfilePicture
-	}
-
-	for i := range responseData.Posts {
-		post := &responseData.Posts[i]
-
+	for i, post := range raw.Posts {
 		if post.ImageBase64 != "" {
-			post.ImageBase64 = "data:image/png;base64," + post.ImageBase64
-		}
-
-		if post.Author.ProfilePicture != "" {
-			post.Author.ProfilePicture = "data:image/png;base64," + post.Author.ProfilePicture
+			raw.Posts[i].ImageBase64 = "data:image/png;base64," + post.ImageBase64
 		}
 	}
 
-	c.JSON(http.StatusOK, responseData)
+	c.JSON(http.StatusOK, raw)
 }
