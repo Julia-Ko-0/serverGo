@@ -325,40 +325,6 @@ func GetRolesInfoForGroup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"roles": rolesInfo})
 }
 
-// Получение постов группы
-func GetGroupPosts(c *gin.Context) {
-	// Получение ID группы из параметра пути /group_posts/:group_id
-	groupIDStr := c.Param("group_id")
-	if groupIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан group_id"})
-		return
-	}
-
-	groupID, err := strconv.Atoi(groupIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат group_id"})
-		return
-	}
-
-	// Чтение limit и offset с дефолтами
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-
-	var result string
-	err = db.DB.Get(&result, "SELECT * FROM public.get_group_posts($1, $2, $3)", groupID, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
-		return
-	}
-
-	var response data.GroupPostResponse
-	if err := json.Unmarshal([]byte(result), &response); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, response)
-}
 func GetGroupBlacklist(c *gin.Context) {
 	// Получаем ID пользователя из контекста
 	userIDRaw, exists := c.Get("user_id")
@@ -1173,35 +1139,6 @@ func CheckSubscription(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": status})
 }
 
-func GetGroupsByUserID(c *gin.Context) {
-	userID := c.Param("id")
-	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id обязателен"})
-		return
-	}
-
-	var result string
-	err := db.DB.Get(&result, "SELECT json_agg(t) FROM get_user_groups($1) t", userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении групп", "details": err.Error()})
-		return
-	}
-
-	var groups []data.GroupResponse
-	if err := json.Unmarshal([]byte(result), &groups); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
-		return
-	}
-
-	// Добавляем префикс для картинок
-	for i := range groups {
-		if groups[i].ProfilePictureBase64 != "" {
-			groups[i].ProfilePictureBase64 = "data:image/png;base64," + groups[i].ProfilePictureBase64
-		}
-	}
-
-	c.JSON(http.StatusOK, groups)
-}
 func GetGroupsForAuthorizedUser(c *gin.Context) {
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
@@ -1235,4 +1172,87 @@ func GetGroupsForAuthorizedUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, groups)
+}
+func GetGroupsByUserID(c *gin.Context) {
+	idStr := c.Param("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID пользователя обязателен"})
+		return
+	}
+
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID пользователя должен быть числом"})
+		return
+	}
+
+	var result string
+	err = db.DB.Get(&result, "SELECT json_agg(t) FROM get_user_groups($1) t", userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении групп по ID", "details": err.Error()})
+		return
+	}
+
+	var groups []data.GroupResponse
+	if err := json.Unmarshal([]byte(result), &groups); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
+		return
+	}
+
+	for i := range groups {
+		if groups[i].ProfilePictureBase64 != "" {
+			groups[i].ProfilePictureBase64 = "data:image/png;base64," + groups[i].ProfilePictureBase64
+		}
+	}
+
+	c.JSON(http.StatusOK, groups)
+}
+
+func GetGroupPosts(c *gin.Context) {
+	groupIDStr := c.Param("group_id")
+	if groupIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id обязателен"})
+		return
+	}
+
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id должен быть числом"})
+		return
+	}
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	var rawResult string
+	err = db.DB.Get(&rawResult, "SELECT * FROM public.get_group_posts($1, $2, $3)", groupID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения данных", "details": err.Error()})
+		return
+	}
+
+	var responseData data.GroupPostResponse
+	if err := json.Unmarshal([]byte(rawResult), &responseData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+		return
+	}
+
+	// Префикс для изображений
+	if responseData.GroupInfo.Owner.ProfilePicture != "" {
+		responseData.GroupInfo.Owner.ProfilePicture = "data:image/png;base64," + responseData.GroupInfo.Owner.ProfilePicture
+	}
+
+	for i := range responseData.Posts {
+		post := &responseData.Posts[i]
+
+		if post.ImageBase64 != "" {
+			post.ImageBase64 = "data:image/png;base64," + post.ImageBase64
+		}
+
+		if post.Author.ProfilePicture != "" {
+			post.Author.ProfilePicture = "data:image/png;base64," + post.Author.ProfilePicture
+		}
+	}
+
+	c.JSON(http.StatusOK, responseData)
 }

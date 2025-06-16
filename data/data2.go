@@ -179,14 +179,22 @@ type GroupTag struct {
 
 // Информация о группе
 type GroupInfoResponse struct {
-	ID           int        `json:"id_group"`
-	Name         string     `json:"name"`
-	Description  string     `json:"description"`
-	Access       string     `json:"access"`
-	MembersCount int        `json:"members_count"`
-	PostsCount   int        `json:"posts_count"`
-	Owner        GroupOwner `json:"owner"`
-	Tags         []GroupTag `json:"tags"`
+	IDGroup      int    `json:"id_group"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Access       bool   `json:"access"`
+	MembersCount int    `json:"members_count"`
+	PostsCount   int    `json:"posts_count"`
+	Owner        struct {
+		UserID         int    `json:"user_id"`
+		Username       string `json:"username"`
+		ProfilePicture string `json:"profile_picture"`
+	} `json:"owner"`
+	Tags []struct {
+		NameTag        string `json:"name_tag"`
+		IDTag          int    `json:"id_tag"`
+		DescriptionTag string `json:"description_tag"`
+	} `json:"tags"`
 }
 
 // GroupSubscriber — структура одного подписчика в группе
@@ -230,8 +238,33 @@ type GroupPost struct {
 
 // GroupPostsResponse — ответ функции get_group_posts
 type GroupPostsResponse struct {
-	GroupInfo GroupInfo   `json:"group_info"`
-	Posts     []GroupPost `json:"posts"`
+	GroupInfo struct {
+		IDGroup     int    `json:"id_group"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Access      string `json:"access"` // "true"/"false"
+		Owner       struct {
+			UserID         int    `json:"user_id"`
+			Username       string `json:"username"`
+			ProfilePicture string `json:"profile_picture"` // base64 без префикса
+		} `json:"owner"`
+	} `json:"group_info"`
+
+	Posts []struct {
+		PostID             int    `json:"id_post_gr"`
+		Header             string `json:"header"`
+		Text               string `json:"text"`
+		CommentsPermission bool   `json:"comments_permission"`
+		DateTime           string `json:"dateTime_post_gr"`
+		Views              int    `json:"views_post"`
+		Repost             bool   `json:"repost"`
+		ImageBase64        string `json:"fale_post_gr"` // base64 без префикса
+		Author             struct {
+			UserID         int    `json:"user_id"`
+			Username       string `json:"username"`
+			ProfilePicture string `json:"profile_picture"` // base64 без префикса
+		} `json:"author"`
+	} `json:"posts"`
 }
 
 // FeatureRequest — структура запроса для добавления новой возможности
