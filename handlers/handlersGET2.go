@@ -732,11 +732,18 @@ func SearchAll(c *gin.Context) {
 
 	// Обработка base64 картинок
 	for i := range results {
+		// Профиль пользователя
 		if results[i].ProfilePicture != "" {
 			results[i].ProfilePicture = "data:image/png;base64," + results[i].ProfilePicture
+		} else {
+			results[i].ProfilePicture = ""
 		}
+
+		// Файл поста
 		if results[i].FilePost != "" {
 			results[i].FilePost = "data:image/png;base64," + results[i].FilePost
+		} else {
+			results[i].FilePost = ""
 		}
 	}
 
@@ -1097,4 +1104,135 @@ func AreFriends(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"are_friends": areFriends})
+}
+
+func CheckFriendRequest(c *gin.Context) {
+	currentUserID := c.GetInt("user_id") // Получи ID из middleware или токена
+	otherUserIDParam := c.Param("other_user_id")
+
+	otherUserID, err := strconv.Atoi(otherUserIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный ID пользователя"})
+		return
+	}
+
+	var status string
+	query := `
+		SELECT CASE
+			WHEN EXISTS (
+				SELECT 1 FROM friendrequest 
+				WHERE user_id_r = $1 AND user_id_f_r = $2
+			) THEN 'me'
+			WHEN EXISTS (
+				SELECT 1 FROM friendrequest 
+				WHERE user_id_r = $2 AND user_id_f_r = $1
+			) THEN 'he'
+			ELSE 'false'
+		END AS status;
+	`
+
+	err = db.DB.Get(&status, query, currentUserID, otherUserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка запроса", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": status})
+}
+func CheckSubscription(c *gin.Context) {
+	currentUserID := c.GetInt("user_id") // ID текущего пользователя из middleware или токена
+	otherUserIDParam := c.Param("other_user_id")
+
+	otherUserID, err := strconv.Atoi(otherUserIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный ID пользователя"})
+		return
+	}
+
+	var status string
+	query := `
+		SELECT CASE
+			WHEN EXISTS (
+				SELECT 1 FROM subscribers 
+				WHERE user_id_s = $1 AND user_id_f_s = $2
+			) THEN 'me'
+			WHEN EXISTS (
+				SELECT 1 FROM subscribers 
+				WHERE user_id_s = $2 AND user_id_f_s = $1
+			) THEN 'he'
+			ELSE 'false'
+		END AS status;
+	`
+
+	err = db.DB.Get(&status, query, currentUserID, otherUserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка проверки подписки", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": status})
+}
+
+func GetGroupsByUserID(c *gin.Context) {
+	userID := c.Param("id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id обязателен"})
+		return
+	}
+
+	var result string
+	err := db.DB.Get(&result, "SELECT json_agg(t) FROM get_user_groups($1) t", userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении групп", "details": err.Error()})
+		return
+	}
+
+	var groups []data.GroupResponse
+	if err := json.Unmarshal([]byte(result), &groups); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
+		return
+	}
+
+	// Добавляем префикс для картинок
+	for i := range groups {
+		if groups[i].ProfilePictureBase64 != "" {
+			groups[i].ProfilePictureBase64 = "data:image/png;base64," + groups[i].ProfilePictureBase64
+		}
+	}
+
+	c.JSON(http.StatusOK, groups)
+}
+func GetGroupsForAuthorizedUser(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неавторизованный доступ"})
+		return
+	}
+
+	userID, ok := userIDVal.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка извлечения ID пользователя"})
+		return
+	}
+
+	var result string
+	err := db.DB.Get(&result, "SELECT json_agg(t) FROM get_user_groups($1) t", userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении групп", "details": err.Error()})
+		return
+	}
+
+	var groups []data.GroupResponse
+	if err := json.Unmarshal([]byte(result), &groups); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
+		return
+	}
+
+	for i := range groups {
+		if groups[i].ProfilePictureBase64 != "" {
+			groups[i].ProfilePictureBase64 = "data:image/png;base64," + groups[i].ProfilePictureBase64
+		}
+	}
+
+	c.JSON(http.StatusOK, groups)
 }

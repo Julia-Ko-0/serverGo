@@ -25,7 +25,7 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Получение постов пользователя
 		auth.POST("/user_info_post", handlers.GetUserPosts)
-		auth.POST("/user_info_post/:login", handlers.GetUsersPosts)
+		auth.POST("/user_info_post_/:login", handlers.GetUsersPosts)
 
 		// Получение чатов пользователя
 		auth.POST("/user/chats", handlers.GetUserChat)
@@ -148,6 +148,12 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/chat/update", handlers.UpdateChatInfo)
 		// проверка есть ли в друзьях
 		auth.POST("/friends/check/:id", handlers.AreFriends)
-
+		//есть ли заявка в друзья
+		auth.POST("/friends/checkR/:other_user_id", handlers.CheckFriendRequest)
+		//подписки
+		auth.POST("/subscription/check/:other_user_id", handlers.CheckSubscription)
+		//группы
+		auth.POST("/groupsUs/me", handlers.GetGroupsForAuthorizedUser)
+		auth.POST("/groupUs/:id", handlers.GetGroupsByUserID)
 	}
 }

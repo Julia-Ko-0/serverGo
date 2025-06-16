@@ -546,3 +546,13 @@ type SearchResult struct {
 	Author *AuthorInfo `json:"author,omitempty"` // post_user, post_group
 	Group  *GroupInfo  `json:"group,omitempty"`  // post_group
 }
+
+type GroupResponse struct {
+	IDGroup              int    `json:"id_group"`
+	Name                 string `json:"name"`
+	Description          string `json:"description"`
+	Access               bool   `json:"access"`
+	TypeGrID             int    `json:"type_gr_id"`
+	Owner                int    `json:"owner"`
+	ProfilePictureBase64 string `json:"profile_picture"`
+}

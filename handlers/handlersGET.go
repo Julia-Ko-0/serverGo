@@ -193,13 +193,11 @@ func GetUsersPosts(c *gin.Context) {
 	}
 
 	userID, err := getUserIDByLogin(login)
-
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Пользователь не найден", "details": err.Error()})
 		return
 	}
 
-	// Читаем лимит и оффсет
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
@@ -214,6 +212,13 @@ func GetUsersPosts(c *gin.Context) {
 	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
+	}
+
+	// Добавляем префикс "data:image/png;base64," к каждому изображению
+	for i, post := range responseData.Posts {
+		if post.ImageBase64 != "" {
+			responseData.Posts[i].ImageBase64 = "data:image/png;base64," + post.ImageBase64
+		}
 	}
 
 	c.JSON(http.StatusOK, responseData)
