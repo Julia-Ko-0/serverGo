@@ -105,6 +105,8 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/group/:group_id/blacklist/add", handlers.AddUserToGroupBlacklist)
 		auth.POST("/group/:group_id/blacklist/remove", handlers.RemoveUserFromGroupBlacklist)
 		auth.POST("/group/info", handlers.GetGroupInfo)
+		auth.POST("/group/user/roles", handlers.GetUserRolesInGroup)
+		auth.POST("/group/post", handlers.AddPostToGroup)
 		// Управление ролями в группе
 		auth.POST("/groups/:group_id/roles", handlers.CreateRoleWithFeatures)
 		auth.POST("/roles/:role_id/features", handlers.AddFeatureToRole)
@@ -155,5 +157,7 @@ func SetupRoutes(r *gin.Engine) {
 		//группы
 		auth.POST("/groupsUs/me", handlers.GetGroupsForAuthorizedUser)
 		auth.POST("/groupUs/:id", handlers.GetGroupsByUserID)
+		auth.POST("/chat/check/:other_user_id", handlers.CheckChatExistence)
+
 	}
 }

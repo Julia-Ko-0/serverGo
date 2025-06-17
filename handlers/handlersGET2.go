@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"log"
@@ -196,30 +197,60 @@ func GetChatsByFolderAndUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, chats)
 }
+
+type RequestBody struct {
+	GroupID int `json:"group_id"`
+}
+
+// GroupInfoResponse - структура для ответа
+type GroupInfoResponse struct {
+	IDGroup      int    `json:"id_group"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Access       string `json:"access"`
+	MembersCount int    `json:"members_count"`
+	PostsCount   int    `json:"posts_count"`
+	Owner        struct {
+		UserID         int    `json:"user_id"`
+		Username       string `json:"username"`
+		ProfilePicture string `json:"profile_picture"`
+	} `json:"owner"`
+	Tags []struct {
+		NameTag        string `json:"name_tag"`
+		IDTag          int    `json:"id_tag"`
+		DescriptionTag string `json:"description_tag"`
+	} `json:"tags"`
+}
+
+// GetGroupInfo - обработчик запроса для получения информации о группе
 func GetGroupInfo(c *gin.Context) {
-	// Получаем group_id из параметров
-	groupIDStr := c.Query("group_id")
-	groupID, err := strconv.Atoi(groupIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный group_id"})
+	var requestBody RequestBody
+
+	// Парсим тело запроса в структуру RequestBody
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка при получении данных", "details": err.Error()})
 		return
 	}
 
+	// Извлекаем group_id из тела запроса
+	groupID := requestBody.GroupID
+
+	// Запрашиваем информацию о группе из базы данных
 	var result string
-	// Вызов функции из БД
-	err = db.DB.Get(&result, "SELECT * FROM public.get_group_info($1)", groupID)
+	err := db.DB.Get(&result, "SELECT * FROM public.get_group_info($1)", groupID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения данных о группе", "details": err.Error()})
 		return
 	}
 
-	var groupInfo data.GroupInfoResponse
-	// Парсинг JSON
+	// Преобразуем результат в структуру GroupInfoResponse
+	var groupInfo GroupInfoResponse
 	if err := json.Unmarshal([]byte(result), &groupInfo); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
 	}
 
+	// Отправляем успешный ответ
 	c.JSON(http.StatusOK, groupInfo)
 }
 
@@ -1248,4 +1279,73 @@ func GetGroupPosts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, raw)
+}
+
+func CheckChatExistence(c *gin.Context) {
+	currentUserID := c.GetInt("user_id") // ID текущего пользователя (получен из middleware)
+	otherUserIDParam := c.Param("other_user_id")
+
+	// Преобразуем параметр в int
+	otherUserID, err := strconv.Atoi(otherUserIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный ID пользователя"})
+		return
+	}
+
+	var chatID int
+	query := `
+		SELECT chat_id
+		FROM userchat
+		WHERE user_ch_id = $1
+		AND chat_id IN (
+			SELECT chat_id
+			FROM userchat
+			WHERE user_ch_id = $2
+		)
+		LIMIT 1
+	`
+
+	err = db.DB.Get(&chatID, query, currentUserID, otherUserID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusOK, gin.H{"exists": false})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при проверке чата", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"exists": true,
+		"chatID": chatID,
+	})
+}
+
+type GroupRequest struct {
+	GroupID int `json:"group_id"`
+}
+
+func GetUserRolesInGroup(c *gin.Context) {
+	var req GroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil || req.GroupID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат JSON или отсутствует group_id"})
+		return
+	}
+
+	currentUserID := c.GetInt("user_id") // получен из middleware
+
+	var result string
+	err := db.DB.Get(&result, "SELECT get_user_roles_and_features_json($1, $2)", currentUserID, req.GroupID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения данных", "details": err.Error()})
+		return
+	}
+
+	var responseData data.UserRolesAndFeaturesResponse
+	if err := json.Unmarshal([]byte(result), &responseData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, responseData)
 }

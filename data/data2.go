@@ -619,3 +619,31 @@ type GroupUserAuthor struct {
 	Username       string `json:"username"`
 	ProfilePicture string `json:"profile_picture"`
 }
+
+//
+
+type UserRolesAndFeaturesResponse struct {
+	IsOwner   bool   `json:"is_owner"`
+	GroupID   int    `json:"group_id"`
+	GroupName string `json:"group_name"`
+	Roles     []Role `json:"roles"`
+}
+
+type Role struct {
+	RoleID            int           `json:"role_id"`
+	RoleName          string        `json:"role_name"`
+	RoleFeatures      []Feature     `json:"role_features"`
+	RoleOpportunities []Opportunity `json:"role_opportunities"`
+}
+
+type Feature struct {
+	FeatureID   int    `json:"feature_id"`
+	FeatureName string `json:"feature_name"`
+	Description string `json:"description"`
+}
+
+type Opportunity struct {
+	OpportunityID          int    `json:"opportunity_id"`
+	OpportunityName        string `json:"opportunity_name"`
+	OpportunityDescription string `json:"opportunity_description"`
+}

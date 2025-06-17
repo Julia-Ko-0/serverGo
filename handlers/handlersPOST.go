@@ -264,3 +264,62 @@ func AddUserToBlacklist(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "Пользователь добавлен в черный список"})
 }
+
+type AddPostToGroupRequest struct {
+	GroupID  int    `json:"group_id"`            // ID группы, куда добавляется пост
+	TextPost string `json:"text_post"`           // Текст поста
+	Header   string `json:"header,omitempty"`    // Заголовок поста (необязательное поле)
+	FalePost string `json:"fale_post,omitempty"` // Изображение в Base64 (необязательное поле)
+
+}
+
+func AddPostToGroup(c *gin.Context) {
+	// Получаем user_id из контекста
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+		return
+	}
+
+	// Чтение и привязка данных JSON
+	var req AddPostToGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный JSON", "details": err.Error()})
+		return
+	}
+
+	// Если fale_post не пустое, декодируем base64 в []byte
+	var imageBytes []byte
+	if req.FalePost != "" {
+		// Если строка Base64 содержит префикс, удаляем его
+		if commaIdx := strings.Index(req.FalePost, ","); commaIdx != -1 {
+			req.FalePost = req.FalePost[commaIdx+1:]
+		}
+
+		// Декодируем строку Base64 в байты
+		var err error
+		imageBytes, err = base64.StdEncoding.DecodeString(req.FalePost)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка декодирования изображения", "details": err.Error()})
+			return
+		}
+	}
+
+	// Параметры SQL запроса для вызова процедуры
+	_, err := db.DB.Exec(`CALL public.add_post_to_group($1, $2, $3, $4, $5)`,
+		userID, req.GroupID, req.TextPost, req.Header, imageBytes)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при добавлении поста в группу", "details": err.Error()})
+		return
+	}
+
+	// Ответ об успешном добавлении поста
+	c.JSON(http.StatusOK, gin.H{"status": "Пост успешно добавлен в группу"})
+}

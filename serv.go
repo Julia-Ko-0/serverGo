@@ -133,11 +133,11 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // адрес твоего фронта
+		AllowOrigins:     []string{"http://localhost:3000"}, // Разрешаем запросы только с фронта на этом домене
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true, // обязательно, чтобы cookies передавались
+		AllowCredentials: true, // Если нужны cookies
 		MaxAge:           12 * time.Hour,
 	}))
 	// r.Use(cors.Default())
