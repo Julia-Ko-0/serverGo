@@ -596,10 +596,9 @@ func SearchGroups(c *gin.Context) {
 		}
 
 		// Обработка base64 картинок, если есть
-		if val, ok := item["profile_picture"].(string); ok && val != "" {
-			item["profile_picture"] = "data:image/png;base64," + val
+		if val, ok := item["group_photo_base64"].(string); ok && val != "" {
+			item["group_photo_base64"] = "data:image/png;base64," + val
 		}
-
 		parsedResults = append(parsedResults, item)
 	}
 
@@ -759,15 +758,21 @@ func SearchAll(c *gin.Context) {
 		// Профиль пользователя
 		if results[i].ProfilePicture != "" {
 			results[i].ProfilePicture = "data:image/png;base64," + results[i].ProfilePicture
-		} else {
-			results[i].ProfilePicture = ""
 		}
 
 		// Файл поста
 		if results[i].FilePost != "" {
 			results[i].FilePost = "data:image/png;base64," + results[i].FilePost
-		} else {
-			results[i].FilePost = ""
+		}
+
+		// Фото группы (если это группа)
+		if results[i].Type == "group" && results[i].Photo != "" {
+			results[i].Photo = "data:image/png;base64," + results[i].Photo
+		}
+
+		// Фото группы внутри поста (post_group)
+		if results[i].Group != nil && results[i].Group.Photo != "" {
+			results[i].Group.Photo = "data:image/png;base64," + results[i].Group.Photo
 		}
 	}
 

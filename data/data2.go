@@ -189,11 +189,10 @@ type GroupSubscriber struct {
 
 // GroupInfo — информация о группе
 type GroupInfo struct {
-	ID          int        `json:"id_group"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Access      string     `json:"access"`
-	Owner       GroupOwner `json:"owner"`
+	GroupID     int    `json:"group_id"`
+	GroupName   string `json:"group_name"`
+	Description string `json:"description"`
+	Photo       string `json:"photo,omitempty"`
 }
 
 // PostAuthor — автор поста
@@ -538,27 +537,31 @@ type SearchPostsResponse struct {
 	TotalCount int    `json:"total_count"` // Количество найденных постов
 	Posts      []Post `json:"posts"`       // Список постов
 }
-
 type SearchResult struct {
 	Type string `json:"type"`
-	// Дальнейшее содержимое в зависимости от типа
-	ID             *int   `json:"id,omitempty"`              // user, group
-	Username       string `json:"username,omitempty"`        // user
-	Firstname      string `json:"firstname,omitempty"`       // user
-	Lastname       string `json:"lastname,omitempty"`        // user
-	Email          string `json:"email,omitempty"`           // user
-	ProfilePicture string `json:"profile_picture,omitempty"` // user
 
-	Name        string   `json:"name,omitempty"`        // group
-	Description string   `json:"description,omitempty"` // group
-	Tags        []string `json:"tags,omitempty"`        // group
+	// Для user
+	ID             *int   `json:"id,omitempty"`
+	Username       string `json:"username,omitempty"`
+	Firstname      string `json:"firstname,omitempty"`
+	Lastname       string `json:"lastname,omitempty"`
+	Email          string `json:"email,omitempty"`
+	ProfilePicture string `json:"profile_picture,omitempty"`
 
-	PostID   *int   `json:"post_id,omitempty"`   // post_user, post_group
-	Header   string `json:"header,omitempty"`    // post_user, post_group
-	Text     string `json:"text,omitempty"`      // post_user, post_group
-	DatePost string `json:"date_post,omitempty"` // post_user, post_group
-	FilePost string `json:"file_post,omitempty"` // post_user, post_group
+	// Для group
+	Name        string   `json:"name,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	Photo       string   `json:"photo,omitempty"` // 🔥 ДОБАВЛЕНО: для group
 
+	// Для post_user и post_group
+	PostID   *int   `json:"post_id,omitempty"`
+	Header   string `json:"header,omitempty"`
+	Text     string `json:"text,omitempty"`
+	DatePost string `json:"date_post,omitempty"`
+	FilePost string `json:"file_post,omitempty"`
+
+	// Вложенные объекты
 	Author *AuthorInfo `json:"author,omitempty"` // post_user, post_group
 	Group  *GroupInfo  `json:"group,omitempty"`  // post_group
 }

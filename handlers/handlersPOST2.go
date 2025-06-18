@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/base64"
 	"log"
 	"net/http"
@@ -27,13 +28,24 @@ func GetFriendsList(c *gin.Context) {
 	var friends []map[string]interface{}
 	for rows.Next() {
 		var id int
-		var login, avatar string
-		rows.Scan(&id, &login, &avatar)
-		friends = append(friends, gin.H{
-			"id":     id,
-			"login":  login,
-			"avatar": avatar,
-		})
+		var login string
+		var avatar sql.NullString // <- Обрабатываем NULL
+
+		if err := rows.Scan(&id, &login, &avatar); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при обработке данных", "details": err.Error()})
+			return
+		}
+
+		friend := map[string]interface{}{
+			"id":    id,
+			"login": login,
+		}
+
+		if avatar.Valid && avatar.String != "" {
+			friend["avatar"] = "data:image/png;base64," + avatar.String
+		}
+
+		friends = append(friends, friend)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"friends": friends})

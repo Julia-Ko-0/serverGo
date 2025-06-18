@@ -169,6 +169,7 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/role-group/delete", handlers.RemoveRoleGroup)
 		auth.POST("/roles/remove-user", handlers.RemoveUserFromRole)
 		auth.POST("/group/update", handlers.UpdateGroupInfo)
+		auth.POST("/friends/remove", handlers.RemoveFriend)
 
 	}
 }
