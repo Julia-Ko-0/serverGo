@@ -509,7 +509,13 @@ func CreateRoleWithFeatures(c *gin.Context) {
 	}
 
 	// Выполнение процедуры в БД
-	_, err = db.DB.Exec("CALL public.create_role_group_with_features($1, $2, $3, $4)", groupID, request.RoleName, request.FeatureIDs, callerID)
+	_, err = db.DB.Exec(
+		"CALL public.create_role_group_with_features($1, $2, $3, $4)",
+		groupID,
+		request.RoleName,
+		pq.Array(request.FeatureIDs), // Передача массива с использованием pq.Array
+		callerID,
+	)
 	if err != nil {
 		log.Println("Ошибка выполнения процедуры create_role_group_with_features:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось создать роль", "details": err.Error()})
@@ -522,6 +528,18 @@ func CreateRoleWithFeatures(c *gin.Context) {
 
 // AddFeatureToRole — добавляет возможность в роль группы
 func AddFeatureToRole(c *gin.Context) {
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+		return
+	}
+
 	// Извлекаем role_id из параметров пути
 	roleIDStr := c.Param("role_id")
 	roleID, err := strconv.Atoi(roleIDStr)
@@ -537,20 +555,8 @@ func AddFeatureToRole(c *gin.Context) {
 		return
 	}
 
-	// Получаем ID пользователя, который вызывает процедуру
-	callerIDRaw, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
-		return
-	}
-	callerID, ok := callerIDRaw.(int)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
-		return
-	}
-
 	// Выполнение процедуры в БД
-	_, err = db.DB.Exec("CALL public.add_feature_to_role($1, $2, $3)", roleID, request.FeatureID, callerID)
+	_, err = db.DB.Exec("CALL public.add_feature_to_role($1, $2, $3)", roleID, request.FeatureID, userID)
 	if err != nil {
 		log.Println("Ошибка выполнения процедуры add_feature_to_role:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось добавить возможность в роль", "details": err.Error()})

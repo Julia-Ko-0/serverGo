@@ -177,26 +177,6 @@ type GroupTag struct {
 	Description string `json:"description_tag"`
 }
 
-// Информация о группе
-type GroupInfoResponse struct {
-	IDGroup      int    `json:"id_group"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	Access       bool   `json:"access"`
-	MembersCount int    `json:"members_count"`
-	PostsCount   int    `json:"posts_count"`
-	Owner        struct {
-		UserID         int    `json:"user_id"`
-		Username       string `json:"username"`
-		ProfilePicture string `json:"profile_picture"`
-	} `json:"owner"`
-	Tags []struct {
-		NameTag        string `json:"name_tag"`
-		IDTag          int    `json:"id_tag"`
-		DescriptionTag string `json:"description_tag"`
-	} `json:"tags"`
-}
-
 // GroupSubscriber — структура одного подписчика в группе
 type GroupSubscriber struct {
 	ID             int    `json:"id_user"`         // ID пользователя
@@ -276,22 +256,21 @@ type FeatureRequest struct {
 
 // FeatureInfo — структура для представления информации о возможности
 type FeatureInfo struct {
-	IDFeature          int    `json:"id_feature"`          // ID возможности
-	NameFeatureRole    string `json:"name_featuresrole"`   // Название возможности
-	DescriptionFeature string `json:"description_feature"` // Описание возможности
+	IDFeature          int    `db:"id_featuresrole" json:"id_featuresRole"`
+	NameFeaturesRole   string `db:"name_featuresrole" json:"name_featuresRole"`
+	DescriptionFeature string `db:"description_feature" json:"description_feature"`
 }
 
 // CreateRoleRequest — структура для отправки данных на создание роли
 type CreateRoleRequest struct {
 	RoleName   string `json:"role_name"`    // Название роли
 	FeatureIDs []int  `json:"features_ids"` // Список ID возможностей (features)
-	CallerID   int    `json:"caller_id"`    // ID пользователя, вызывающего процедуру
 }
 
 // AddFeatureRequest — структура для отправки данных на добавление возможности в роль
 type AddFeatureRequest struct {
 	FeatureID int `json:"feature_id"` // ID возможности, которую нужно добавить
-	CallerID  int `json:"caller_id"`  // ID пользователя, который вызывает процедуру
+
 }
 
 // AddUserToRoleRequest — структура для отправки данных на добавление пользователя в роль группы

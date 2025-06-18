@@ -319,23 +319,23 @@ func GetGroupSubscribers(c *gin.Context) {
 
 // ⛓ Возвращает список всех возможностей
 func GetFeaturesInfo(c *gin.Context) {
-	var featuresInfo []data.FeatureInfo
+	var features []data.FeatureInfo
 
-	// Запрос к БД для получения всех возможностей
-	err := db.DB.Select(&featuresInfo, "SELECT * FROM public.get_features_info()")
+	err := db.DB.Select(&features, "SELECT * FROM public.get_features_info()")
 	if err != nil {
-		log.Println("Ошибка выполнения запроса get_features_info:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить информацию о возможностях", "details": err.Error()})
+		log.Println("Ошибка при запросе features info:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка запроса к базе",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	// Успешный ответ
-	c.JSON(http.StatusOK, featuresInfo)
+	c.JSON(http.StatusOK, gin.H{"features": features})
 }
 
 // GetRolesInfoForGroup — получает информацию о ролях в группе
 func GetRolesInfoForGroup(c *gin.Context) {
-	// Извлекаем group_id из параметров пути
 	groupIDStr := c.Param("group_id")
 	groupID, err := strconv.Atoi(groupIDStr)
 	if err != nil {
@@ -343,16 +343,22 @@ func GetRolesInfoForGroup(c *gin.Context) {
 		return
 	}
 
-	// Выполнение функции в БД для получения информации о ролях в группе
-	var rolesInfo []data.RoleInfo
-	err = db.DB.Select(&rolesInfo, "SELECT * FROM public.get_roles_info_for_group($1)", groupID)
+	var rawJSON []byte
+	err = db.DB.Get(&rawJSON, "SELECT public.get_roles_info_for_group($1)", groupID)
 	if err != nil {
-		log.Println("Ошибка выполнения запроса get_roles_info_for_group:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить информацию о ролях", "details": err.Error()})
+		log.Println("Ошибка выполнения функции get_roles_info_for_group:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения данных", "details": err.Error()})
 		return
 	}
 
-	// Успешный ответ с информацией о ролях
+	var rolesInfo []data.RoleInfo
+	err = json.Unmarshal(rawJSON, &rolesInfo)
+	if err != nil {
+		log.Println("Ошибка парсинга JSON в RoleInfo:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки данных", "details": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"roles": rolesInfo})
 }
 

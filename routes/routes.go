@@ -158,6 +158,13 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/groupsUs/me", handlers.GetGroupsForAuthorizedUser)
 		auth.POST("/groupUs/:id", handlers.GetGroupsByUserID)
 		auth.POST("/chat/check/:other_user_id", handlers.CheckChatExistence)
+		// add group
+		auth.POST("/group/addUser", handlers.AddUserToGroupHandler)
+		auth.POST("/groupinfo/:group_id", handlers.GetGroupInfoHandler)
+		auth.POST("/groupinfohan/:group_id", handlers.IsUserInGroupHandler)
+		auth.POST("/group/:group_id/unsubscribe", handlers.UnsubscribeFromGroupHandler)
+		auth.POST("/get-features-info", handlers.GetFeaturesInfo)
 
+		auth.POST("/remove-feature", handlers.RemoveFeatureFromRole)
 	}
 }
