@@ -115,7 +115,7 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Теги для групп
 		auth.POST("/tags/create", handlers.CreateTag)
-		auth.POST("/tags/:group_id", handlers.GetTags)
+		auth.POST("/tags", handlers.GetAllTags)
 		auth.POST("/group/update-tags", handlers.UpdateTagsInGroup)
 
 		// Управление постами пользователя
@@ -166,5 +166,9 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/get-features-info", handlers.GetFeaturesInfo)
 
 		auth.POST("/remove-feature", handlers.RemoveFeatureFromRole)
+		auth.POST("/role-group/delete", handlers.RemoveRoleGroup)
+		auth.POST("/roles/remove-user", handlers.RemoveUserFromRole)
+		auth.POST("/group/update", handlers.UpdateGroupInfo)
+
 	}
 }

@@ -179,12 +179,12 @@ type GroupTag struct {
 
 // GroupSubscriber — структура одного подписчика в группе
 type GroupSubscriber struct {
-	ID             int    `json:"id_user"`         // ID пользователя
-	Username       string `json:"username"`        // Логин
-	Firstname      string `json:"firstname"`       // Имя
-	Lastname       string `json:"lastname"`        // Фамилия
-	Patronymic     string `json:"patronymic"`      // Отчество
-	ProfilePicture string `json:"profile_picture"` // Фото профиля (base64)
+	ID             int     `json:"id_user"`
+	Username       string  `json:"username"`
+	Firstname      string  `json:"firstname"`
+	Lastname       string  `json:"lastname"`
+	Patronymic     string  `json:"patronymic"`
+	ProfilePicture *string `json:"profile_picture"` // указатель, потому что может быть null
 }
 
 // GroupInfo — информация о группе
@@ -275,8 +275,7 @@ type AddFeatureRequest struct {
 
 // AddUserToRoleRequest — структура для отправки данных на добавление пользователя в роль группы
 type AddUserToRoleRequest struct {
-	UserID   int `json:"user_id"`   // ID пользователя, которого нужно добавить
-	CallerID int `json:"caller_id"` // ID пользователя, который вызывает процедуру
+	UserID int `json:"user_id"` // ID пользователя, которого нужно добавить
 }
 
 // RoleFeature — структура для описания возможности роли
@@ -351,6 +350,11 @@ type SearchGroupsRequest struct {
 type TagsGroupRequest struct {
 	TagName        string `json:"tag_name"`
 	TagDescription string `json:"tag_description"`
+}
+type Tag_ struct {
+	ID          int    `db:"id_tag" json:"id_tag"`
+	Name        string `db:"name_tag" json:"name_tag"`
+	Description string `db:"description_tag" json:"description_tag"`
 }
 type UpdateTagGroup struct {
 	GroupID int   `json:"group_id"`
@@ -566,9 +570,9 @@ type GroupResponse struct {
 	Access               bool   `json:"access"`
 	TypeGrID             int    `json:"type_gr_id"`
 	Owner                int    `json:"owner"`
-	ProfilePictureBase64 string `json:"profile_picture"`
+	ProfilePictureBase64 string `json:"profile_picture_base64"` // Фото владельца группы
+	GroupPhotoBase64     string `json:"group_photo_base64"`     // Фото группы
 }
-
 type RawGroupPostsResponse struct {
 	GroupInfo GroupInfoResponse_ `json:"group_info"`
 	Posts     []PostGroupItem    `json:"posts"`

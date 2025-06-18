@@ -263,18 +263,22 @@ func GetGroupSubscribers(c *gin.Context) {
 		return
 	}
 
-	var result string
-	// Выполнение SQL-функции, возвращающей JSON
-	err := db.DB.Get(&result, "SELECT * FROM public.get_group_subscribers($1)", groupID)
+	var jsonBytes []byte
+	err := db.DB.Get(&jsonBytes, "SELECT public.get_group_subscribers($1)", groupID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения подписчиков", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка получения подписчиков",
+			"details": err.Error(),
+		})
 		return
 	}
-	c.JSON(http.StatusOK, result)
+
 	var subscribers []data.GroupSubscriber
-	// Преобразуем JSON-строку в слайс структур
-	if err := json.Unmarshal([]byte(result), &subscribers); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+	if err := json.Unmarshal(jsonBytes, &subscribers); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка обработки JSON",
+			"details": err.Error(),
+		})
 		return
 	}
 
@@ -409,7 +413,23 @@ func GetGroupBlacklist(c *gin.Context) {
 	// Возвращаем ответ клиенту
 	c.JSON(http.StatusOK, gin.H{"blacklist": jsonResponse})
 }
-func GetTags(c *gin.Context) {
+
+func GetAllTags(c *gin.Context) {
+	var tags []data.Tag_
+
+	err := db.DB.Select(&tags, `SELECT id_tag, name_tag, description_tag FROM public.tags`)
+	if err != nil {
+		log.Println("Ошибка при получении тегов:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Не удалось получить теги",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, tags)
+}
+func GetTags_admin(c *gin.Context) {
 	// Получаем ID группы из URL параметра
 	groupIDStr := c.Param("group_id")
 	if groupIDStr == "" {
@@ -425,6 +445,7 @@ func GetTags(c *gin.Context) {
 	// Выполним запрос к функции для получения тегов
 	var tags []data.TagsGroupRequest // data.Tag - структура, которая представляет тег в Go
 	err = db.DB.Select(&tags, `SELECT * FROM public.get_tags($1)`, groupID)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения тегов", "details": err.Error()})
 		return
@@ -1176,40 +1197,6 @@ func CheckSubscription(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": status})
 }
 
-func GetGroupsForAuthorizedUser(c *gin.Context) {
-	userIDVal, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неавторизованный доступ"})
-		return
-	}
-
-	userID, ok := userIDVal.(int)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка извлечения ID пользователя"})
-		return
-	}
-
-	var result string
-	err := db.DB.Get(&result, "SELECT json_agg(t) FROM get_user_groups($1) t", userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении групп", "details": err.Error()})
-		return
-	}
-
-	var groups []data.GroupResponse
-	if err := json.Unmarshal([]byte(result), &groups); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
-		return
-	}
-
-	for i := range groups {
-		if groups[i].ProfilePictureBase64 != "" {
-			groups[i].ProfilePictureBase64 = "data:image/png;base64," + groups[i].ProfilePictureBase64
-		}
-	}
-
-	c.JSON(http.StatusOK, groups)
-}
 func GetGroupsByUserID(c *gin.Context) {
 	idStr := c.Param("id")
 	if idStr == "" {
@@ -1354,4 +1341,49 @@ func GetUserRolesInGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, responseData)
+}
+func GetGroupsForAuthorizedUser(c *gin.Context) {
+	// Получаем user_id из контекста
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неавторизованный доступ"})
+		return
+	}
+
+	// Преобразуем user_id в int
+	userID, ok := userIDVal.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка извлечения ID пользователя"})
+		return
+	}
+
+	// Выполняем SQL-запрос для получения групп пользователя
+	var result string
+	err := db.DB.Get(&result, "SELECT json_agg(t) FROM get_user_groups($1) t", userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении групп", "details": err.Error()})
+		return
+	}
+
+	// Преобразуем результат в список групп
+	var groups []data.GroupResponse
+	if err := json.Unmarshal([]byte(result), &groups); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга JSON", "details": err.Error()})
+		return
+	}
+
+	// Добавляем префикс base64 для фото группы и профиля
+	for i := range groups {
+		// Для фото владельца группы (profile_picture)
+		if groups[i].ProfilePictureBase64 != "" {
+			groups[i].ProfilePictureBase64 = "data:image/png;base64," + groups[i].ProfilePictureBase64
+		}
+		// Для фото группы (group_photo)
+		if groups[i].GroupPhotoBase64 != "" {
+			groups[i].GroupPhotoBase64 = "data:image/png;base64," + groups[i].GroupPhotoBase64
+		}
+	}
+
+	// Отправляем результат
+	c.JSON(http.StatusOK, groups)
 }
