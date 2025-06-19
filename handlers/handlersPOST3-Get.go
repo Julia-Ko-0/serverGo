@@ -392,3 +392,53 @@ func ToggleLikePost(c *gin.Context) {
 		"like_added": likeAdded, // true или false
 	})
 }
+
+func AddUserToChat(c *gin.Context) {
+	var req struct {
+		ChatID int    `json:"chat_id"` // ID чата
+		UserID int    `json:"user_id"` // ID пользователя, которого добавляем
+		Role   string `json:"role"`    // Роль (опционально)
+	}
+
+	// Получаем executor_id из контекста (текущий пользователь)
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	executorID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+		return
+	}
+
+	// Привязываем JSON
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Неверный формат JSON",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Если роль не указана — по умолчанию user
+	if req.Role == "" {
+		req.Role = "user"
+	}
+
+	// Вызов процедуры
+	query := `CALL public.add_user_to_chat($1, $2, $3, $4)`
+	_, err := db.DB.Exec(query, executorID, req.ChatID, req.UserID, req.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка при добавлении пользователя в чат",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Пользователь успешно добавлен в чат",
+	})
+}
