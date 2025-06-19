@@ -619,59 +619,60 @@ func AddUserToRoleGroup(c *gin.Context) {
 	// Успешный ответ
 	c.JSON(http.StatusOK, gin.H{"message": "Пользователь успешно добавлен в роль группы"})
 }
-func AddCommentToGroupPost(c *gin.Context) {
-	// Получаем ID пользователя из контекста
-	userIDRaw, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
-		return
-	}
 
-	// Преобразуем user_id в int
-	userID, ok := userIDRaw.(int)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
-		return
-	}
+// func AddCommentToGroupPost(c *gin.Context) {
+// 	// Получаем ID пользователя из контекста
+// 	userIDRaw, exists := c.Get("user_id")
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+// 		return
+// 	}
 
-	// Получаем ID группы из параметра пути
-	groupIDStr := c.Param("group_id")
-	if groupIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан group_id"})
-		return
-	}
+// 	// Преобразуем user_id в int
+// 	userID, ok := userIDRaw.(int)
+// 	if !ok {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+// 		return
+// 	}
 
-	// Преобразуем group_id в int
-	groupID, err := strconv.Atoi(groupIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат group_id"})
-		return
-	}
+// 	// Получаем ID группы из параметра пути
+// 	groupIDStr := c.Param("group_id")
+// 	if groupIDStr == "" {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан group_id"})
+// 		return
+// 	}
 
-	// Получаем данные комментария из тела запроса
-	var req data.AddCommentToGroupPostRequest
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный JSON", "details": err.Error()})
-		return
-	}
+// 	// Преобразуем group_id в int
+// 	groupID, err := strconv.Atoi(groupIDStr)
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат group_id"})
+// 		return
+// 	}
 
-	// Если parent_comment_id не передан, передаем nil
-	var parentID interface{} = nil
-	if req.ParentCommentID != nil {
-		parentID = *req.ParentCommentID
-	}
+// 	// Получаем данные комментария из тела запроса
+// 	var req data.AddCommentToGroupPostRequest
+// 	if err := c.BindJSON(&req); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный JSON", "details": err.Error()})
+// 		return
+// 	}
 
-	// Вставляем комментарий
-	_, err = db.DB.Exec(`CALL public.add_comment_to_group_post($1, $2, $3, $4)`,
-		groupID, userID, req.CommentText, parentID)
+// 	// Если parent_comment_id не передан, передаем nil
+// 	var parentID interface{} = nil
+// 	if req.ParentCommentID != nil {
+// 		parentID = *req.ParentCommentID
+// 	}
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка добавления комментария", "details": err.Error()})
-		return
-	}
+// 	// Вставляем комментарий
+// 	_, err = db.DB.Exec(`CALL public.add_comment_to_group_post($1, $2, $3, $4)`,
+// 		groupID, userID, req.CommentText, parentID)
 
-	c.JSON(http.StatusOK, gin.H{"status": "Комментарий добавлен"})
-}
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка добавления комментария", "details": err.Error()})
+// 		return
+// 	}
+
+//		c.JSON(http.StatusOK, gin.H{"status": "Комментарий добавлен"})
+//	}
 func AddUserToGroupBlacklist(c *gin.Context) {
 	// Получаем ID пользователя из контекста
 	userIDRaw, exists := c.Get("user_id")

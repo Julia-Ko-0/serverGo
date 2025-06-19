@@ -172,5 +172,7 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/friends/remove", handlers.RemoveFriend)
 		auth.POST("/posts/like/toggle", handlers.ToggleLikePost)
 		auth.POST("/addUsChat", handlers.AddUserToChat)
+		auth.POST("/group/comment/add", handlers.AddCommentToGroupPost)
+		auth.POST("/user/comment/add", handlers.AddCommentToUserPost)
 	}
 }

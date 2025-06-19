@@ -442,3 +442,85 @@ func AddUserToChat(c *gin.Context) {
 		"message": "Пользователь успешно добавлен в чат",
 	})
 }
+func AddCommentToGroupPost(c *gin.Context) {
+	var req struct {
+		PostID   int    `json:"post_id"`           // ID поста
+		Text     string `json:"text"`              // Текст комментария
+		ParentID *int   `json:"parent_comment_id"` // ID родительского комментария (null, если основной)
+	}
+
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Неверный формат JSON",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Вызов SQL-процедуры
+	_, err := db.DB.Exec(`CALL public.add_comment_to_group_post($1, $2, $3, $4)`,
+		req.PostID, userID, req.Text, req.ParentID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка при добавлении комментария к групповому посту",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Комментарий успешно добавлен к групповому посту"})
+}
+func AddCommentToUserPost(c *gin.Context) {
+	var req struct {
+		PostID   int    `json:"post_id"`           // ID поста
+		Text     string `json:"text"`              // Текст комментария
+		ParentID *int   `json:"parent_comment_id"` // ID родительского комментария (null, если основной)
+	}
+
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Неверный формат JSON",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Вызов SQL-процедуры
+	_, err := db.DB.Exec(`CALL public.add_comment_to_user_post($1, $2, $3, $4)`,
+		req.PostID, userID, req.Text, req.ParentID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Ошибка при добавлении комментария к пользовательскому посту",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Комментарий успешно добавлен к пользовательскому посту"})
+}

@@ -454,6 +454,7 @@ func GetTags_admin(c *gin.Context) {
 	// Ответ с полученными тегами
 	c.JSON(http.StatusOK, gin.H{"tags": tags})
 }
+
 func GetComments(c *gin.Context) {
 	// Получаем параметры из запроса
 	postIDStr := c.DefaultQuery("post_id", "")
@@ -480,8 +481,8 @@ func GetComments(c *gin.Context) {
 		return
 	}
 
-	// Вызываем функцию для получения комментариев
-	var commentsJSON string
+	// Выполняем SQL-запрос к функции
+	var commentsJSON sql.NullString
 	err = db.DB.QueryRow(`
 		SELECT public.get_comments($1, $2, $3, $4)`,
 		postID, typeStr, limit, offset).Scan(&commentsJSON)
@@ -491,8 +492,22 @@ func GetComments(c *gin.Context) {
 		return
 	}
 
-	// Возвращаем результат пользователю
-	c.JSON(http.StatusOK, gin.H{"comments": commentsJSON})
+	// Если результат NULL — возвращаем пустой массив
+	if !commentsJSON.Valid {
+		c.JSON(http.StatusOK, gin.H{"comments": []interface{}{}})
+		return
+	}
+
+	// Попробуем распарсить строку JSON, если это нужно
+	var parsedComments interface{}
+	if err := json.Unmarshal([]byte(commentsJSON.String), &parsedComments); err != nil {
+		// Если не удалось распарсить — просто вернем как строку
+		c.JSON(http.StatusOK, gin.H{"comments": commentsJSON.String})
+		return
+	}
+
+	// Отправляем распарсенные комментарии
+	c.JSON(http.StatusOK, gin.H{"comments": parsedComments})
 }
 func GetUserFavouritePosts(c *gin.Context) {
 	userIDRaw, exists := c.Get("user_id")
