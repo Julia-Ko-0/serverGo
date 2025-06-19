@@ -349,3 +349,46 @@ func GetGroupInfoHandler(c *gin.Context) {
 	// Отправляем данные клиенту
 	c.JSON(http.StatusOK, groupInfo)
 }
+
+func ToggleLikePost(c *gin.Context) {
+	type ToggleLikeInput struct {
+		PostID   int    `json:"post_id"`
+		TypePost string `json:"type_post"` // "us" или "gr"
+	}
+
+	var input ToggleLikeInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
+		return
+	}
+
+	if input.TypePost != "us" && input.TypePost != "gr" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "type_post must be 'us' or 'gr'"})
+		return
+	}
+
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+
+	// Вызов функции и получение результата
+	var likeAdded bool
+	err := db.DB.Get(&likeAdded, "SELECT public.toggle_like_post($1, $2, $3)", input.PostID, userID, input.TypePost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle like", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":     "success",
+		"like_added": likeAdded, // true или false
+	})
+}
