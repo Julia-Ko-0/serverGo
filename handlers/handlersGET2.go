@@ -970,13 +970,30 @@ func GetFilteredPosts(c *gin.Context) {
 
 	var finalPosts []data.FilteredPostResponse
 	for _, p := range rawPosts {
+		// Преобразуем аватар пользователя в base64
+		if p.Author.ProfilePicture != "" {
+			p.Author.ProfilePicture = "data:image/png;base64," + p.Author.ProfilePicture
+		}
+
+		// Преобразуем файл поста в base64
+		var falePostBase64 string
+		if len(p.FalePost) > 0 {
+			falePostBase64 = "data:image/png;base64," + base64.StdEncoding.EncodeToString(p.FalePost)
+		}
+
+		// Преобразуем фото группы в base64 (если оно есть)
+		if p.GroupInfo != nil && p.GroupInfo.Photo != "" {
+			p.GroupInfo.Photo = "data:image/png;base64," + p.GroupInfo.Photo
+		}
+
+		// Формируем финальный список постов
 		finalPosts = append(finalPosts, data.FilteredPostResponse{
 			PostType:           p.PostType,
 			PostID:             p.PostID,
 			UserID:             p.UserID,
 			Header:             p.Header,
 			Text:               p.Text,
-			FalePostBase64:     "data:image/png;base64," + base64.StdEncoding.EncodeToString(p.FalePost),
+			FalePostBase64:     falePostBase64, // Уже в base64
 			DateTimePost:       p.DateTimePost,
 			ViewsPost:          p.ViewsPost,
 			Repost:             p.Repost,

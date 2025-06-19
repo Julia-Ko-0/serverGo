@@ -191,8 +191,8 @@ type GroupSubscriber struct {
 type GroupInfo struct {
 	GroupID     int    `json:"group_id"`
 	GroupName   string `json:"group_name"`
+	Photo       string `json:"photo"`
 	Description string `json:"description"`
-	Photo       string `json:"photo,omitempty"`
 }
 
 // PostAuthor — автор поста
@@ -459,6 +459,22 @@ type RawFilteredPost struct {
 	Header             string     `json:"header"`
 	Text               string     `json:"text"`
 	FalePost           []byte     `json:"fale_post"`
+	DateTimePost       string     `json:"dateTime_post"`
+	ViewsPost          int        `json:"views_post"`
+	Repost             int        `json:"repost"`
+	CommentsPermission bool       `json:"comments_permission"`
+	CommentsCount      int        `json:"comments_count"`
+	GroupInfo          *GroupInfo `json:"group_info"`
+	Author             AuthorInfo `json:"author"`
+	LikesCount         int        `json:"likes_count"`
+}
+type RawFilteredPost_ struct {
+	PostType           string     `json:"post_type"`
+	PostID             int        `json:"post_id"`
+	UserID             int        `json:"user_id"`
+	Header             string     `json:"header"`
+	Text               string     `json:"text"`
+	FalePostBase64     string     `json:"fale_post"`
 	DateTimePost       string     `json:"dateTime_post"`
 	ViewsPost          int        `json:"views_post"`
 	Repost             int        `json:"repost"`
