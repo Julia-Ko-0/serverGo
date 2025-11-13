@@ -592,6 +592,37 @@ type GroupResponse struct {
 	ProfilePictureBase64 string `json:"profile_picture_base64"` // Фото владельца группы
 	GroupPhotoBase64     string `json:"group_photo_base64"`     // Фото группы
 }
+
+// type RawGroupPostsResponse struct {
+// 	GroupInfo GroupInfoResponse_ `json:"group_info"`
+// 	Posts     []PostGroupItem    `json:"posts"`
+// }
+
+// type GroupInfoResponse_ struct {
+// 	ID          int             `json:"id_group"`
+// 	Name        string          `json:"name"`
+// 	Description string          `json:"description"`
+// 	Access      bool            `json:"access"` // меняем тип на bool
+// 	Owner       GroupUserAuthor `json:"owner"`
+// }
+// type PostGroupItem struct {
+// 	PostID      int             `json:"id_post_gr"`
+// 	Header      string          `json:"header"`
+// 	Text        string          `json:"text"`
+// 	Comments    bool            `json:"comments_permission"`
+// 	DateTime    string          `json:"dateTime_post_gr"`
+// 	Views       int             `json:"views_post"`
+// 	Repost      int             `json:"repost"`
+// 	ImageBase64 string          `json:"fale_post_gr"`
+// 	Author      GroupUserAuthor `json:"author"`
+// }
+
+// type GroupUserAuthor struct {
+// 	UserID         int    `json:"user_id"`
+// 	Username       string `json:"username"`
+// 	ProfilePicture string `json:"profile_picture"`
+// }
+
 type RawGroupPostsResponse struct {
 	GroupInfo GroupInfoResponse_ `json:"group_info"`
 	Posts     []PostGroupItem    `json:"posts"`
@@ -601,19 +632,24 @@ type GroupInfoResponse_ struct {
 	ID          int             `json:"id_group"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
-	Access      bool            `json:"access"` // меняем тип на bool
+	Access      bool            `json:"access"`
 	Owner       GroupUserAuthor `json:"owner"`
 }
+
 type PostGroupItem struct {
-	PostID      int             `json:"id_post_gr"`
-	Header      string          `json:"header"`
-	Text        string          `json:"text"`
-	Comments    bool            `json:"comments_permission"`
-	DateTime    string          `json:"dateTime_post_gr"`
-	Views       int             `json:"views_post"`
-	Repost      int             `json:"repost"`
-	ImageBase64 string          `json:"fale_post_gr"`
-	Author      GroupUserAuthor `json:"author"`
+	PostID        int             `json:"id_post_gr"`
+	TypePost      string          `json:"type_post"` // <── добавлено поле
+	Header        string          `json:"header"`
+	Text          string          `json:"text"`
+	Comments      bool            `json:"comments_permission"`
+	DateTime      string          `json:"dateTime_post_gr"`
+	Views         int             `json:"views_post"`
+	Repost        int             `json:"repost"`
+	ImageBase64   string          `json:"fale_post_gr"`
+	CommentsCount int             `json:"comments_count"`
+	LikesCount    int             `json:"likes_count"`
+	RepostsCount  int             `json:"reposts_count"`
+	Author        GroupUserAuthor `json:"author"`
 }
 
 type GroupUserAuthor struct {

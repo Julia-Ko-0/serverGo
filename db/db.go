@@ -13,7 +13,7 @@ var DB *sqlx.DB
 
 // Инициализация БД
 func InitDB() {
-	connStr := "host=localhost port=5433 user=postgres password=1234567890 dbname=cours2 sslmode=disable"
+	connStr := "host=localhost port=5433 user=postgres password=1234567890 dbname=mes sslmode=disable"
 	var err error
 	DB, err = sqlx.Connect("postgres", connStr)
 	if err != nil {
