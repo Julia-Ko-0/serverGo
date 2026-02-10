@@ -11,8 +11,8 @@ type Tag struct {
 }
 
 type GroupInfoResponse struct {
-	IDGroup      int        `json:"id_group"`
-	Name         string     `json:"name"`
+	IDGroup      int        `json:"group_id"`
+	Name         string     `json:"group_name"`
 	Description  string     `json:"description"`
 	Access       bool       `json:"access"`
 	MembersCount int        `json:"members_count"`

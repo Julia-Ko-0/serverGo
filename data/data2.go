@@ -623,40 +623,43 @@ type GroupResponse struct {
 // 	ProfilePicture string `json:"profile_picture"`
 // }
 
+// /////////////////
+// Структура для ответа с постами группы
 type RawGroupPostsResponse struct {
-	GroupInfo GroupInfoResponse_ `json:"group_info"`
-	Posts     []PostGroupItem    `json:"posts"`
+	Posts []PostGroupItem `json:"posts"`
 }
 
-type GroupInfoResponse_ struct {
-	ID          int             `json:"id_group"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Access      bool            `json:"access"`
-	Owner       GroupUserAuthor `json:"owner"`
-}
-
+// Структура для отдельного поста группы
 type PostGroupItem struct {
-	PostID        int             `json:"id_post_gr"`
-	TypePost      string          `json:"type_post"` // <── добавлено поле
-	Header        string          `json:"header"`
-	Text          string          `json:"text"`
-	Comments      bool            `json:"comments_permission"`
-	DateTime      string          `json:"dateTime_post_gr"`
-	Views         int             `json:"views_post"`
-	Repost        int             `json:"repost"`
-	ImageBase64   string          `json:"fale_post_gr"`
-	CommentsCount int             `json:"comments_count"`
-	LikesCount    int             `json:"likes_count"`
-	RepostsCount  int             `json:"reposts_count"`
-	Author        GroupUserAuthor `json:"author"`
+	PostID        int               `json:"post_id"`
+	PostType      string            `json:"post_type"` // Тип поста (group)
+	Header        string            `json:"header"`
+	Text          string            `json:"text"`
+	Comments      bool              `json:"comments_permission"`
+	DateTime      string            `json:"dateTime_post_gr"`
+	Views         int               `json:"views_post"`
+	Repost        int               `json:"repost"`
+	ImageBase64   string            `json:"fale_post_gr"` // Base64 строка для изображения
+	CommentsCount int               `json:"comments_count"`
+	LikesCount    int               `json:"likes_count"`
+	Author        GroupUserAuthor   `json:"author"`
+	GroupInfo     GroupInfoResponse `json:"group_info"`
 }
 
+// Структура для информации о группе
+
+// Структура для информации об авторе
 type GroupUserAuthor struct {
 	UserID         int    `json:"user_id"`
 	Username       string `json:"username"`
-	ProfilePicture string `json:"profile_picture"`
+	ProfilePicture string `json:"profile_picture"` // Base64 строка для изображения
 }
+
+/////////////
+
+// Структура для отдельного поста группы
+
+// Структура для информации об авторе
 
 //
 

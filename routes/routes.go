@@ -144,6 +144,10 @@ func SetupRoutes(r *gin.Engine) {
 		// Новый путь для получения рекомендованных постов
 		auth.POST("/recommended-posts", handlers.GetRecommendedPosts)
 		auth.POST("/filtered-posts", handlers.GetFilteredPosts)
+		auth.POST("/random-posts", handlers.GetRandomPostsAny)
+
+		
+
 		auth.POST("/get-user-chat-folders", handlers.GetUserFolders)
 
 		//обновить имя и фото чата

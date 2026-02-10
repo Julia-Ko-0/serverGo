@@ -39,20 +39,28 @@ type UserPostResponse struct {
 		BirthDate        string `json:"date_of_birth"`
 		CountUs          int    `json:"count_us"`
 		Description      string `json:"description"`
-		ProfilePicture   string `json:"profile_picture"`
+		ProfilePicture   string `json:"profile_picture"` // Base64
 		FriendsCount     int    `json:"friends_count"`
 		SubscribersCount int    `json:"subscribers_count"`
 	} `json:"user_info"`
 
 	Posts []struct {
-		PostID      int    `json:"id_post_us"`
-		Header      string `json:"header"`
-		Text        string `json:"text_post"`
-		DateTime    string `json:"dateTime_post_us"`
-		Comments    bool   `json:"comments_enabled"`
-		Views       int    `json:"views_post"`
-		Repost      int    `json:"repost"`
-		ImageBase64 string `json:"fale_post"`
+		PostID        int    `json:"post_id"`
+		TypePost      string          `json:"post_type"` // <── добавлено поле
+		Header        string `json:"header"`
+		Text          string `json:"text_post"`
+		DateTime      string `json:"dateTime_post_us"`
+		Comments      bool   `json:"comments_enabled"`
+		Views         int    `json:"views_post"`
+		Repost        int    `json:"repost"`
+		ImageBase64   string `json:"fale_post"` // Base64
+		CommentsCount int    `json:"comments_count"`
+		LikesCount    int    `json:"likes_count"`
+		Author        struct {
+			UserID        int    `json:"user_id"`
+			Username      string `json:"username"`
+			ProfilePicture string `json:"profile_picture"` // Base64
+		} `json:"author"`
 	} `json:"posts"`
 }
 type ChatFolder struct {
@@ -117,31 +125,48 @@ type RawUserPostResponse struct {
 		BirthDate        string `json:"date_of_birth"`
 		CountUs          int    `json:"count_us"`
 		Description      string `json:"description"`
-		ProfilePicture   []byte `json:"profile_picture"` // bytea
+		ProfilePicture   []byte `json:"profile_picture"` // bytea из PostgreSQL
 		FriendsCount     int    `json:"friends_count"`
 		SubscribersCount int    `json:"subscribers_count"`
 	} `json:"user_info"`
 
 	Posts []struct {
-		PostID    int    `json:"id_post_us"`
-		Header    string `json:"header"`
-		Text      string `json:"text_post"`
-		DateTime  string `json:"dateTime_post_us"`
-		Comments  bool   `json:"comments_enabled"`
-		Views     int    `json:"views_post"`
-		Repost    int    `json:"repost"`
-		ImageData []byte `json:"fale_post"` // bytea
+		PostID        int    `json:"id_post_us"`
+	TypePost      string          `json:"post_type"` // <── добавлено поле
+		Header        string `json:"header"`
+		Text          string `json:"text_post"`
+		DateTime      string `json:"dateTime_post_us"`
+		Comments      bool   `json:"comments_enabled"`
+		Views         int    `json:"views_post"`
+		Repost        int    `json:"repost"`
+		ImageData     []byte `json:"fale_post"` // bytea
+		CommentsCount int    `json:"comments_count"` // Количество комментариев
+		LikesCount    int    `json:"likes_count"`    // Количество лайков
+		Author        struct {
+			UserID        int    `json:"user_id"`
+			Username      string `json:"username"`
+			ProfilePicture []byte `json:"profile_picture"` // bytea автора
+		} `json:"author"`
 	} `json:"posts"`
 }
+
 type PostResponse struct {
-	PostID      int    `json:"id_post_us"`
-	Header      string `json:"header"`
-	Text        string `json:"text_post"`
-	DateTime    string `json:"dateTime_post_us"`
-	Comments    bool   `json:"comments_enabled"`
-	Views       int    `json:"views_post"`
-	Repost      int    `json:"repost"`
-	ImageBase64 string `json:"fale_post"`
+	PostID        int    `json:"post_id"`
+	TypePost      string          `json:"post_type"` // <── добавлено поле
+	Header        string `json:"header"`
+	Text          string `json:"text_post"`
+	DateTime      string `json:"dateTime_post_us"`
+	Comments      bool   `json:"comments_enabled"`
+	Views         int    `json:"views_post"`
+	Repost        int    `json:"repost"`
+	ImageBase64   string `json:"fale_post"`
+	CommentsCount int    `json:"comments_count"`
+	LikesCount    int    `json:"likes_count"`
+	Author        struct {
+		UserID        int    `json:"user_id"`
+		Username      string `json:"username"`
+		ProfilePicture string `json:"profile_picture"`
+	} `json:"author"`
 }
 
 //

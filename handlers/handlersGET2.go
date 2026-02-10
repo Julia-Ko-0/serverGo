@@ -1023,6 +1023,71 @@ func GetFilteredPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, finalPosts)
 }
 
+func GetRandomPostsAny(c *gin.Context) {
+
+
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	var result string
+	err := db.DB.Get(&result, "SELECT * FROM public.get_random_posts_any($1, $2)",  limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения постов", "details": err.Error()})
+		return
+	}
+
+	var rawPosts []data.RawFilteredPost
+	if err := json.Unmarshal([]byte(result), &rawPosts); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
+		return
+	}
+
+	var finalPosts []data.FilteredPostResponse
+	for _, p := range rawPosts {
+		// Преобразуем аватар пользователя в base64
+		if p.Author.ProfilePicture != "" {
+			p.Author.ProfilePicture = "data:image/png;base64," + p.Author.ProfilePicture
+		}
+
+		// Преобразуем файл поста в base64
+		var falePostBase64 string
+		if len(p.FalePost) > 0 {
+			falePostBase64 = "data:image/png;base64," + base64.StdEncoding.EncodeToString(p.FalePost)
+		}
+
+		// Преобразуем фото группы в base64 (если оно есть)
+		if p.GroupInfo != nil && p.GroupInfo.Photo != "" {
+			p.GroupInfo.Photo = "data:image/png;base64," + p.GroupInfo.Photo
+		}
+
+		// Формируем финальный список постов
+		finalPosts = append(finalPosts, data.FilteredPostResponse{
+			PostType:           p.PostType,
+			PostID:             p.PostID,
+			UserID:             p.UserID,
+			Header:             p.Header,
+			Text:               p.Text,
+			FalePostBase64:     falePostBase64, // Уже в base64
+			DateTimePost:       p.DateTimePost,
+			ViewsPost:          p.ViewsPost,
+			Repost:             p.Repost,
+			CommentsPermission: p.CommentsPermission,
+			CommentsCount:      p.CommentsCount,
+			GroupInfo:          p.GroupInfo,
+			Author:             p.Author,
+			LikesCount:         p.LikesCount,
+		})
+	}
+
+	c.JSON(http.StatusOK, finalPosts)
+}
+
+
+
+
+
+
 type ChatFolderBool struct {
 	IDChat        int     `json:"id_chat"`
 	NameChat      string  `json:"name_chat"`
@@ -1296,19 +1361,47 @@ func GetGroupPosts(c *gin.Context) {
 		return
 	}
 
-	var raw data.RawGroupPostsResponse
+	// var raw []data.PostGroupItem
+var raw []data.RawFilteredPost
 	if err := json.Unmarshal([]byte(result), &raw); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки JSON", "details": err.Error()})
 		return
 	}
+	
+	var finalPosts []data.FilteredPostResponse
+	for _, p := range raw { 
+		// Преобразуем фото группы в base64 (если оно есть)
+		if p.GroupInfo.Photo!= "" {
+			p.GroupInfo.Photo = "data:image/png;base64," + p.GroupInfo.Photo
 
-	for i, post := range raw.Posts {
-		if post.ImageBase64 != "" {
-			raw.Posts[i].ImageBase64 = "data:image/png;base64," + post.ImageBase64
 		}
+			// Преобразуем файл поста в base64
+		var falePostBase64 string
+		if len(p.FalePost) > 0 {
+			falePostBase64 = "data:image/png;base64," + base64.StdEncoding.EncodeToString(p.FalePost)
+		}
+
+	// Формируем финальный список постов
+		finalPosts = append(finalPosts, data.FilteredPostResponse{
+			PostType:           p.PostType,
+			PostID:             p.PostID,
+			UserID:             p.UserID,
+			Header:             p.Header,
+			Text:               p.Text,
+			FalePostBase64:     falePostBase64, // Уже в base64
+			DateTimePost:       p.DateTimePost,
+			ViewsPost:          p.ViewsPost,
+			Repost:             p.Repost,
+			CommentsPermission: p.CommentsPermission,
+			CommentsCount:      p.CommentsCount,
+			GroupInfo:          p.GroupInfo,
+			Author:             p.Author,
+			LikesCount:         p.LikesCount,
+		})
+
 	}
 
-	c.JSON(http.StatusOK, raw)
+	c.JSON(http.StatusOK, finalPosts)
 }
 
 func CheckChatExistence(c *gin.Context) {

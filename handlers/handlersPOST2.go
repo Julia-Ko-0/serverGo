@@ -831,42 +831,102 @@ func UpdateTagsInGroup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "Теги успешно обновлены"})
 }
 func ToggleLikeComment(c *gin.Context) {
-	// Получаем параметры из запроса
-	commentIDStr := c.DefaultQuery("comment_id", "")
-	userIDStr := c.DefaultQuery("user_id", "")
-	isGroupStr := c.DefaultQuery("is_group", "false")
 
-	// Преобразуем параметры в нужные типы
-	commentID, err := strconv.Atoi(commentIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат comment_id"})
+	// Структура входных данных
+	type ToggleLikeCommentInput struct {
+		CommentID int  `json:"comment_id"`
+		IsGroup   bool `json:"is_group"` // true = лайк от группы, false = от пользователя
+	}
+
+	var input ToggleLikeCommentInput
+
+	// Читаем JSON
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid input",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат user_id"})
+	
+	// Получаем user_id из контекста (middleware ставит его туда)
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
 		return
 	}
 
-	// Проверяем is_group, если не передано, принимаем как false
-	isGroup := false
-	if isGroupStr == "true" {
-		isGroup = true
-	}
-
-	// Выполняем запрос к БД для вызова процедуры
-	_, err = db.DB.Exec(`CALL public.toggle_like_comment($1, $2, $3)`,
-		commentID, userID, isGroup)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при обработке лайка", "details": err.Error()})
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
 		return
 	}
 
-	// Успешный ответ
-	c.JSON(http.StatusOK, gin.H{"status": "Лайк успешно обработан"})
+	// Вызов PostgreSQL функции, возвращающей bool: добавлен ли лайк
+	var likeAdded bool
+	err := db.DB.Get(&likeAdded,
+		"SELECT public.toggle_like_comment($1, $2, $3)",
+		input.CommentID, userID, input.IsGroup,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to toggle like",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Успех
+	c.JSON(http.StatusOK, gin.H{
+		"status":     "success",
+		"like_added": likeAdded, // true = лайк поставлен, false = лайк удалён
+	})
 }
+
+// func ToggleLikeComment(c *gin.Context) {
+// 	// Получаем параметры из запроса
+// 	commentIDStr := c.DefaultQuery("comment_id", "")
+
+// 	isGroupStr := c.DefaultQuery("is_group", "false")
+
+// 	// Преобразуем параметры в нужные типы
+// 	commentID, err := strconv.Atoi(commentIDStr)
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат comment_id"})
+// 		return
+// 	}
+// 		userIDRaw, exists := c.Get("user_id")
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+// 		return
+// 	}
+// 	userID, ok := userIDRaw.(int)
+// 	if !ok {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+// 		return
+// 	}
+
+
+// 	// Проверяем is_group, если не передано, принимаем как false
+// 	isGroup := false
+// 	if isGroupStr == "true" {
+// 		isGroup = true
+// 	}
+
+// 	// Выполняем запрос к БД для вызова процедуры
+// 	_, err = db.DB.Exec(`CALL public.toggle_like_comment($1, $2, $3)`,
+// 		commentID, userID, isGroup)
+
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при обработке лайка", "details": err.Error()})
+// 		return
+// 	}
+
+// 	// Успешный ответ
+// 	c.JSON(http.StatusOK, gin.H{"status": "Лайк успешно обработан"})
+// }
 func AddToFavourites(c *gin.Context) {
 	userIDRaw, exists := c.Get("user_id")
 	if !exists {

@@ -171,6 +171,7 @@ func GetUserPosts(c *gin.Context) {
 	for _, p := range raw.Posts {
 		response.Posts = append(response.Posts, user.PostResponse{
 			PostID:      p.PostID,
+			TypePost: p.TypePost,
 			Header:      p.Header,
 			Text:        p.Text,
 			DateTime:    p.DateTime,

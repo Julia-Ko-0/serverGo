@@ -4,9 +4,9 @@ import (
 	"net/http"
 	post "serverGo/data"
 	"serverGo/db"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // изм имя/фамилия/отчество пользователя
@@ -83,37 +83,40 @@ func UpdateUserEmail(c *gin.Context) {
 
 // изм даты рождения
 func UpdateUserBirthDate(c *gin.Context) {
-	userIDRaw, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
-		return
-	}
+    userIDRaw, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id не найден в контексте"})
+        return
+    }
 
-	userID, ok := userIDRaw.(int)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
-		return
-	}
-	var req post.UpdateUserBirthDateRequest
+    userID, ok := userIDRaw.(int)
+    if !ok {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
+        return
+    }
 
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный JSON", "details": err.Error()})
-		return
-	}
+    var req post.UpdateUserBirthDateRequest
 
-	date, err := time.Parse("2006-01-02", req.BirthDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты", "details": err.Error()})
-		return
-	}
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный JSON", "details": err.Error()})
+        return
+    }
 
-	if _, err := db.DB.Exec(`CALL public.update_user_birth_date($1, $2)`, userID, date); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обновления даты рождения", "details": err.Error()})
-		return
-	}
+    // Парсим дату в формате YYYY-MM-DD
+    // date, err := time.Parse("2006-01-02", req.BirthDate)
+    // if err != nil {
+    //     c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты", "details": err.Error()})
+    //     return
+    // }
 
-	c.JSON(http.StatusOK, gin.H{"status": "Дата рождения обновлена"})
+    if _, err := db.DB.Exec(`CALL public.update_user_birth_date($1, $2)`, userID, req.BirthDate); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обновления даты рождения", "details": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"status": "Дата рождения обновлена"})
 }
+
 
 // логина(ника)
 func UpdateUserLogin(c *gin.Context) {
@@ -156,14 +159,29 @@ func UpdateUserPassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный тип user_id"})
 		return
 	}
+
 	var req post.UpdateUserPasswordRequest
 
+	// Сначала читаем JSON
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный JSON", "details": err.Error()})
 		return
 	}
 
-	if _, err := db.DB.Exec(`CALL public.update_user_password($1, $2)`, userID, req.NewPassword); err != nil {
+	if req.NewPassword == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Новый пароль пуст"})
+		return
+	}
+
+	// Хешируем пароль (даже если клиент хеширует SHA256 — всё равно нужно bcrypt)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка хеширования пароля"})
+		return
+	}
+
+	// В БД записываем ХЕШ, а не оригинальный пароль!
+	if _, err := db.DB.Exec(`CALL public.update_user_password($1, $2)`, userID, string(hashedPassword)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обновления пароля", "details": err.Error()})
 		return
 	}
